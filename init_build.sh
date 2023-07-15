@@ -16,7 +16,7 @@ fi
 source install/setup.bash
 
 # CPU 모델 확인
-CPU_MODEL=$(cat /proc/cpuinfo | grep "model name" | head -1 | awk -F'i5-' '{split($2, a, " "); sub(/[^0-9]+$/, "", a[1]); print a[1]}')
+CPU_MODEL=$(cat /proc/cpuinfo | grep "model name" | head -1 | awk -F'i[3579]-' '{split($2, a, " "); sub(/[^0-9]+$/, "", a[1]); print a[1]}')
 CPU_VER=${CPU_MODEL//[!0-9]/}
 CPU_NOW=$(cat /proc/cpuinfo | awk -F: '/model name/ {print $2; exit}')
 # CPU 모델 비교
