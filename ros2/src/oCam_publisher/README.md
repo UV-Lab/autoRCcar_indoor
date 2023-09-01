@@ -10,3 +10,14 @@ http://withrobot.com/camera/ocam-1cgn-u/
 ```
 sudo apt-get install libv4l-dev libudev-dev libopencv-dev
 ```
+
+# Setting
+TBD
+
+# Run
+```
+ros2 run ocam ocam_node
+ros2 launch ocam ocam.launch.py
+ros2 launch ocam ocam_rviz.launch.py
+```
+
