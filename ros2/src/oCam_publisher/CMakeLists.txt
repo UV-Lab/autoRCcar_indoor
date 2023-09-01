@@ -52,6 +52,8 @@ target_include_directories(ocam_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
   $<INSTALL_INTERFACE:include>)
 
+ament_target_dependencies(ocam_node rclcpp std_msgs sensor_msgs Threads OpenCV)
+
 install(TARGETS ocam_node
   DESTINATION lib/${PROJECT_NAME})
 
