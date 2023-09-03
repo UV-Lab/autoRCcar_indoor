@@ -17,5 +17,22 @@ ros2 run ocam ocam_node
 ros2 launch ocam ocam.launch.py
 ros2 launch ocam ocam_rviz.launch.py
 ```
+
 # Appendix
-# how to use cpp 
+To configure camera parameters in runtime, you can use the visualizer app in the _cpp_ folder.
+
+Move to the cpp folder and build app
+
+```
+mkdir build
+cd ./build
+cmake.. && make -j
+./oCam
+```
+
+To adjust parameters,
+ - Press the key `]` to increase exposure.
+ - Press the key `[` to decrease exposure.
+ - Press the key `=` to increase brightness.
+ - Press the key `-` to decrease brightness.
+ - Press the key `q` to exit

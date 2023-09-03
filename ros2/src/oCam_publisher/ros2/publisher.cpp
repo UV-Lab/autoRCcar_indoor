@@ -15,7 +15,10 @@ int main(int argc, char *argv[]) {
   // Use designated port when given
   std::string devPath = node->get_parameter("device_path").as_string();
   if (devPath.empty()) {
-    update_device_path(devPath);
+    if (!update_device_path(devPath)) {
+      RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "oCam-1MGN-U-T is not found");
+      return -1;
+    }
   }
 
   Withrobot::Camera camera(devPath);
