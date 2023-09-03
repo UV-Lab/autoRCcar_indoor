@@ -17,17 +17,16 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <opencv2/highgui.hpp>
+#include <opencv2/opencv.hpp>
 #include <vector>
 
-#include <opencv2/opencv.hpp>
-#include <opencv2/highgui.hpp>
-#include "api/withrobot_camera.hpp"	/* withrobot camera API */
+#include "api/withrobot_camera.hpp" /* withrobot camera API */
 
 /*
  *	Main
  */
-int main (int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
     /*
      * initialize oCam-1CGN
      *
@@ -35,27 +34,26 @@ int main (int argc, char* argv[])
      *
      * USB 3.0
      * 	[0] "8-bit Greyscale 1280 x 720 60 fps"
-	 *	[1] "8-bit Greyscale 1280 x 960 45 fps"
-	 *	[2] "8-bit Greyscale 320 x 240 160 fps"
-	 * 	[3] "8-bit Greyscale 640 x 480 80 fps"
-	 *
-	 * USB 2.0
+     *	[1] "8-bit Greyscale 1280 x 960 45 fps"
+     *	[2] "8-bit Greyscale 320 x 240 160 fps"
+     * 	[3] "8-bit Greyscale 640 x 480 80 fps"
+     *
+     * USB 2.0
      * 	[0] "8-bit Greyscale 1280 x 720 30 fps"
-	 *	[1] "8-bit Greyscale 1280 x 960 22.5 fps"
-	 *	[2] "8-bit Greyscale 320 x 240 160 fps"
-	 * 	[3] "8-bit Greyscale 640 x 480 80 fps"
-	 *
+     *	[1] "8-bit Greyscale 1280 x 960 22.5 fps"
+     *	[2] "8-bit Greyscale 320 x 240 160 fps"
+     * 	[3] "8-bit Greyscale 640 x 480 80 fps"
+     *
      */
 
     // Use designated port when given
     std::string devPath = "";
-    if (argc == 2){
-    devPath = argv[1];
-    }
-    else {
+    if (argc == 2) {
+        devPath = argv[1];
+    } else {
         std::vector<std::string> paths;
         // Withrobot camera id would be like "usb-WITHROBOT_Inc._oCam-1CGN-U-T_SN_35E27013-video-index0"
-        for (const auto& entry : std::filesystem::directory_iterator("/dev/v4l/by-id") ) {
+        for (const auto& entry : std::filesystem::directory_iterator("/dev/v4l/by-id")) {
             if (entry.is_character_file() && (entry.path().filename().string().find("1CGN-U-T") != std::string::npos)) {
                 auto path = entry.path().parent_path();
                 path /= std::filesystem::read_symlink(entry.path());
@@ -65,8 +63,8 @@ int main (int argc, char* argv[])
         }
 
         if (paths.empty()) {
-          std::cerr << "[Error]: oCam-1MGN-U-T is not found" << std::endl;
-          return -1;
+            std::cerr << "[Error]: oCam-1MGN-U-T is not found" << std::endl;
+            return -1;
         }
         // Singel camera can contain two video pahts, normally ealier one gives image
         std::sort(paths.begin(), paths.end());
@@ -78,29 +76,29 @@ int main (int argc, char* argv[])
     /* USB 3.0 */
     /* bayer RBG 1280 x 720 60 fps */
     // camera.set_format(1280, 720, Withrobot::fourcc_to_pixformat('G','B','G','R'), 1, 60);
-    camera.set_format(640, 480, Withrobot::fourcc_to_pixformat('G','B','G','R'), 1, 30);
+    camera.set_format(640, 480, Withrobot::fourcc_to_pixformat('G', 'B', 'G', 'R'), 1, 30);
 
     /* bayer RBG 1280 x 960 45 fps */
-    //camera.set_format(1280, 960, Withrobot::fourcc_to_pixformat('G','B','G','R')), 1, 45);
+    // camera.set_format(1280, 960, Withrobot::fourcc_to_pixformat('G','B','G','R')), 1, 45);
 
     /* bayer RBG 320 x 240 160 fps */
-    //camera.set_format(320, 240, Withrobot::fourcc_to_pixformat('G','B','G','R'), 1, 160);
+    // camera.set_format(320, 240, Withrobot::fourcc_to_pixformat('G','B','G','R'), 1, 160);
 
     /* bayer RBG 640 x 480 80 fps */
-    //camera.set_format(640, 480, Withrobot::fourcc_to_pixformat('G','B','G','R')'), 1, 80);
+    // camera.set_format(640, 480, Withrobot::fourcc_to_pixformat('G','B','G','R')'), 1, 80);
 
     /* USB 2.0 */
     /* bayer RBG 1280 x 720 30 fps */
-    //camera.set_format(1280, 720, Withrobot::fourcc_to_pixformat(''G','B','G','R'), 1, 30);
+    // camera.set_format(1280, 720, Withrobot::fourcc_to_pixformat(''G','B','G','R'), 1, 30);
 
     /* bayer RBG 1280 x 960 22.5 fps */
-    //camera.set_format(1280, 960, Withrobot::fourcc_to_pixformat(''G','B','G','R'), 2, 45);
+    // camera.set_format(1280, 960, Withrobot::fourcc_to_pixformat(''G','B','G','R'), 2, 45);
 
     /* bayer RBG 320 x 240 160 fps */
-    //camera.set_format(320, 240, Withrobot::fourcc_to_pixformat(''G','B','G','R'), 1, 160);
+    // camera.set_format(320, 240, Withrobot::fourcc_to_pixformat(''G','B','G','R'), 1, 160);
 
     /* bayer RBG 640 x 480 80 fps */
-    //camera.set_format(640, 480, Withrobot::fourcc_to_pixformat(''G','B','G','R'), 1, 80);
+    // camera.set_format(640, 480, Withrobot::fourcc_to_pixformat(''G','B','G','R'), 1, 80);
 
     /*
      * get current camera format (image size and frame rate)
@@ -120,13 +118,14 @@ int main (int argc, char* argv[])
     printf("---------------------------------------------------------------\n");
 
     /*
-     * [ supported camera controls; The double quotes are the 'get_control' and the 'set_control' function string argument values. ]
+     * [ supported camera controls; The double quotes are the 'get_control' and the 'set_control' function string
+     * argument values. ]
      *
      *  [0] "Gain",          Value(default [min, step, max]): 64 ( 64 [0, 1, 127] )
      *  [1] "Exposure (Absolute)", Value(default [min, step, max]): 39 ( 39 [1, 1, 625] )
      *
      */
-    
+
     const int32_t INTI_EXPOSURE_ABS = 130;
     camera.set_control("Exposure Time, Absolute", INTI_EXPOSURE_ABS);
 
@@ -147,8 +146,8 @@ int main (int argc, char* argv[])
      * Start streaming
      */
     if (!camera.start()) {
-    	perror("Failed to start.");
-    	exit(0);
+        perror("Failed to start.");
+        exit(0);
     }
 
     /*
@@ -164,65 +163,65 @@ int main (int argc, char* argv[])
      */
     bool quit = false;
     while (!quit) {
-    	/* Copy a single frame(image) from camera(oCam-1MGN). This is a blocking function. */
-    	int size = camera.get_frame(srcImg.data, camFormat.image_size, 1);
+        /* Copy a single frame(image) from camera(oCam-1MGN). This is a blocking function. */
+        int size = camera.get_frame(srcImg.data, camFormat.image_size, 1);
 
-    	/* If the error occured, restart the camera. */
-    	if (size == -1) {
-    	    printf("error number: %d\n", errno);
-    	    perror("Cannot get image from camera");
-    	    camera.stop();
-    	    camera.start();
-    	    continue;
-    	}
-
-		cv::cvtColor(srcImg, colorImg, cv::COLOR_BayerGB2BGR);
-    	/* Show image */
-    	cv::imshow(windowName.c_str(), colorImg);
-    	char key = cv::waitKey(1);
-
-    	/* Keyboard options */
-    	switch (key) {
-    	/* When press the 'q' key then quit. */
-    	case 'q':
-    		quit = true;
-    		break;
-
-    	/* When press the '[' key then decrease the exposure time. */
-    	case '[': {
-    		int exposure = camera.get_control("Exposure Time, Absolute");
-    		camera.set_control("Exposure Time, Absolute", --exposure);
-            std::cout << exposure << std::endl;
-    		break;
+        /* If the error occured, restart the camera. */
+        if (size == -1) {
+            printf("error number: %d\n", errno);
+            perror("Cannot get image from camera");
+            camera.stop();
+            camera.start();
+            continue;
         }
 
-		/* When press the ']' key then increase the exposure time. */
-    	case ']': {
-    		int exposure = camera.get_control("Exposure Time, Absolute");
-    		camera.set_control("Exposure Time, Absolute", ++exposure);
-            std::cout << exposure << std::endl;
-    		break;
-        }
+        cv::cvtColor(srcImg, colorImg, cv::COLOR_BayerGB2BGR);
+        /* Show image */
+        cv::imshow(windowName.c_str(), colorImg);
+        char key = cv::waitKey(1);
 
-		/* When press the '-' key then decrease the brightness. */
-    	case '-': {
-    		int brightness = camera.get_control("Gain");
-    		camera.set_control("Gain", --brightness);
-            std::cout << brightness << std::endl;
-    		break;
-        }
+        /* Keyboard options */
+        switch (key) {
+            /* When press the 'q' key then quit. */
+            case 'q':
+                quit = true;
+                break;
 
-		/* When press the '=' key then increase the brightness. */
-    	case '=': {
-    		int brightness = camera.get_control("Gain");
-    		camera.set_control("Gain", ++brightness);
-            std::cout << brightness << std::endl;
-    		break;
-        }
+            /* When press the '[' key then decrease the exposure time. */
+            case '[': {
+                int exposure = camera.get_control("Exposure Time, Absolute");
+                camera.set_control("Exposure Time, Absolute", --exposure);
+                std::cout << exposure << std::endl;
+                break;
+            }
 
-    	default:
-    		break;
-    	}
+            /* When press the ']' key then increase the exposure time. */
+            case ']': {
+                int exposure = camera.get_control("Exposure Time, Absolute");
+                camera.set_control("Exposure Time, Absolute", ++exposure);
+                std::cout << exposure << std::endl;
+                break;
+            }
+
+            /* When press the '-' key then decrease the brightness. */
+            case '-': {
+                int brightness = camera.get_control("Gain");
+                camera.set_control("Gain", --brightness);
+                std::cout << brightness << std::endl;
+                break;
+            }
+
+            /* When press the '=' key then increase the brightness. */
+            case '=': {
+                int brightness = camera.get_control("Gain");
+                camera.set_control("Gain", ++brightness);
+                std::cout << brightness << std::endl;
+                break;
+            }
+
+            default:
+                break;
+        }
     }
 
     cv::destroyAllWindows();
@@ -232,7 +231,7 @@ int main (int argc, char* argv[])
      */
     camera.stop();
 
-	printf("Done.\n");
+    printf("Done.\n");
 
-	return 0;
+    return 0;
 }
