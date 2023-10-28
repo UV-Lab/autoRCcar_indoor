@@ -12,12 +12,12 @@
  *  - Press the key '-' for decrease the brightness.
  */
 
+#include <algorithm>
+#include <cstdio>
 #include <filesystem>
 #include <fstream>
-#include <cstdio>
+#include <iostream>
 #include <vector>
-#include <algorithm>
-#include <errno.h>
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui.hpp>
@@ -62,6 +62,11 @@ int main (int argc, char* argv[])
                 path = std::filesystem::canonical(path);
                 paths.push_back(path);
             }
+        }
+
+        if (paths.empty()) {
+          std::cerr << "[Error]: oCam-1MGN-U-T is not found" << std::endl;
+          return -1;
         }
         // Singel camera can contain two video pahts, normally ealier one gives image
         std::sort(paths.begin(), paths.end());

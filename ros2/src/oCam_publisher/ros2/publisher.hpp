@@ -13,7 +13,7 @@
 // to work well with ros2's signal handler
 void sigint_handler(int signal_value) { (void)signal_value; }
 
-void update_device_path(std::string &devPath) {
+bool update_device_path(std::string &devPath) {
   std::vector<std::string> paths;
 
   // Withrobot camera id would be like
@@ -29,10 +29,14 @@ void update_device_path(std::string &devPath) {
     }
   }
 
+  if (paths.empty())
+    return false;
+
   // Singel camera can contain two video pahts, normally ealier one gives
   // image
   std::sort(paths.begin(), paths.end());
   devPath = paths.front();
+  return true;
 }
 
 class ImagePublisher : public rclcpp::Node {
