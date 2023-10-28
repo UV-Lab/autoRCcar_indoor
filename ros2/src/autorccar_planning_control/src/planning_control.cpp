@@ -89,7 +89,6 @@ Point PlanningControl::GetLookAheadPoint() { return look_ahead_point_; }
 double PlanningControl::CalcSpeedCommand(const State& state, const double target_speed) {
     Point position(state.pos.x(), state.pos.y());
     double remain_distance = cubic_spline_path_->GetRemainDistance(position);
-    std::cout << "remain_distance: " << remain_distance << std::endl;
     double stop_distance = (target_speed * target_speed) / (2 * parameters_.control.decel);
 
     if (remain_distance < stop_distance) {
