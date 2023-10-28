@@ -1,0 +1,19 @@
+/**:
+  ros__parameters:
+    rccar_config:
+      wheelbase: 0.3 # [m]
+      max_steering_angle: 0.7854 # [rad]
+
+    controller:
+      goal_reach_threshold: 0.3 # [m]
+      target_speed: 1.0 # [m/s]
+      nav_hz: 100 # [Hz]
+      control_hz: 50 # [Hz]
+      accel: 0.5 # [m/s^2]
+      decel: 0.5 # [m/s^2]
+      pure_pursuiter:
+        look_ahead_distance: 1.0 # [m]
+
+    simulator:
+      simulation_hz: 500 # [Hz]
+      nav_pub_hz: 100 # [Hz]

@@ -33,7 +33,10 @@ endif()
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Imu.msg"
   "msg/Gnss.msg"
-  "msg/NavState.msg"  
+  "msg/NavState.msg"
+  "msg/ControlCommand.msg"
+  "msg/Path.msg"
+  "msg/PathPoint.msg"
   DEPENDENCIES std_msgs geometry_msgs 
 )
 
