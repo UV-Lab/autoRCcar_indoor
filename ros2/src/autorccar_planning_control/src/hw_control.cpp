@@ -69,9 +69,10 @@ void hw_control::uart_tx(const int fd, const geometry_msgs::msg::Vector3& msg) {
     msgTx[5] = (int)conVel & 0xff;
     msgTx[6] = ((int)cmdMode >> 8) & 0xff;
     msgTx[7] = (int)cmdMode & 0xff;
-        
-    std::cout << "CMD " << cmdMode << "\t UART Tx : " << ceil(delta*1000)/1000 << ", " << ceil(vel*1000)/1000 \
-    							  << " >> "<< conStr << ", " << conVel <<std::endl;
+
+    if (cmdMode == 1)        
+        std::cout << "CMD " << cmdMode << "\t UART Tx : " << ceil(delta*1000)/1000 << ", " << ceil(vel*1000)/1000 \
+    	    						  << " >> "<< conStr << ", " << conVel <<std::endl;
 
     int cnt = write(fd, msgTx, sizeof(msgTx));
 }
