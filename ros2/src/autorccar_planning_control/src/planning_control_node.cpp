@@ -15,6 +15,7 @@
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include "std_msgs/msg/int8.hpp"
 #include "visualization_msgs/msg/marker_array.hpp"
+#include "hw_control.h"
 
 namespace {
 
@@ -23,9 +24,14 @@ using autorccar::planning_control::planning_control::DriveCommand;
 
 }  // namespace
 
+hw_control hw;
+
 class PlanningControlNode : public rclcpp::Node {
    public:
     explicit PlanningControlNode(const rclcpp::NodeOptions& options) : Node("planning_control", options) {
+        // uart
+        hw.fd = hw.uart_init("/dev/ttyUSB0");
+
         // read parameters
         ReadParameters();
 
@@ -112,9 +118,15 @@ class PlanningControlNode : public rclcpp::Node {
         control_command_msg.steering_angle = control_command.steering_angle;
 
         control_command_publisher_->publish(control_command_msg);
+
+        hw.msg.x = control_command_msg.steering_angle;
+        hw.msg.y = control_command_msg.speed;
+        hw.msg.z = hw.cmdMode;
+        hw.uart_tx(hw.fd, hw.msg); 
     }
 
     void GcsCommandCallback(const std_msgs::msg::Int8& msg) const {
+        hw.cmdMode = msg.data;
         if (msg.data == 0) {
             planning_controller_->SetDriveCommand(DriveCommand::kStop);
         } else if (msg.data == 1) {
