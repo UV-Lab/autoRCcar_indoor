@@ -23,11 +23,7 @@ if [ -d "build" ]; then
     rm -rf build
 fi
 mkdir build && cd build
-if [[ "$CPU_VER" -lt "5000" ]]; then
-    cmake .. && make -j 2
-else
-    cmake .. && make -j
-fi
+cmake .. && make -j
 sudo make install
 cd ../..
 
