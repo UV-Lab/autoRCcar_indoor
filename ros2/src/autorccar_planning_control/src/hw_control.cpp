@@ -47,6 +47,8 @@ void hw_control::uart_tx(const int fd, const geometry_msgs::msg::Vector3& msg) {
     double delta = msg.x;
     double vel = msg.y;
     int cmdMode = msg.z;
+    
+    delta = delta * -1;
 
     conStr = int(sf* delta * (180/M_PI)) + Steer_PWM_N; // [deg]
     conVel = int(fa*vel + fb*vel*vel + fc);
