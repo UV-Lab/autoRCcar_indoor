@@ -1,0 +1,3 @@
+width: 50            # map width [m] 
+height: 50           # map height [m] 
+resolution: 0.05     # resolution [m/cell] 
