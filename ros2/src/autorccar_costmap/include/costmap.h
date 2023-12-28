@@ -27,8 +27,7 @@ class Costmap {
    public:
     Costmap(const std::string &config_file_path);
 
-    bool pcl_flag;
-    bool pose_flag;
+    bool costmap_flag;  // noticify it's time to update the costmap
 
     void UpdatePointCloud(const pcl::PointCloud<pcl::PointXYZI>::Ptr pcl);
     void UpdatePose(Eigen::Matrix<double, 4, 4> &trans);
@@ -41,6 +40,9 @@ class Costmap {
     unsigned int width;  // costmap width and height [m]
     unsigned int height;
     double resolution;  // costmap resolution [m/cell]
+
+    unsigned int cnt_iter;
+    unsigned int cnt_limit;
 
     Eigen::MatrixXd costmap;
     unsigned int size_x;  // number of cell
@@ -59,6 +61,7 @@ class Costmap {
 
     void LoadConfig(const std::string &config);
     void InitCostmap(unsigned int size_x, unsigned int size_y);
+    void UpdateCostmapFlag();
     bool IsInBounds(int x, int y);
     void BresenhamLine(int sx, int sy, int ex, int ey);
     void UpdateCell(int x, int y, double p);

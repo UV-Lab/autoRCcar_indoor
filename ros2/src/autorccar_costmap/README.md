@@ -10,16 +10,12 @@ Set config.yaml before launch
 - width: map width [m]  
 - height: map height [m]  
 - resolution: resolution [m/cell]  
+- updateEveryNthLidar: update costmap every Nth lidar input
 
 ## Launch
 ### Launch autorccar_costmap 
 ```bash
 ros2 launch autorccar_costmap costmap.launch.py
-```
-### Publish occupancy grid map 
-Topic name : ```occupancy_grid```   
-```bash
-ros2 topic pub /costmap/publish std_msgs/msg/Bool "{data: True}" -1
 ```
 ### Save occupancy grid map as *.pgm
 ```bash
