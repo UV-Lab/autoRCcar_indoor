@@ -5,7 +5,7 @@
 #include <fstream>
 #include <iostream>
 
-Costmap::Costmap(const std::string& config_file_path) : pcl_flag(false), pose_flag(false) {
+Costmap::Costmap(const std::string& config_file_path) : costmap_flag(false), cnt_iter(0) {
     LoadConfig(config_file_path);
 
     size_x = (unsigned int)width / resolution;
@@ -30,9 +30,10 @@ void Costmap::LoadConfig(const std::string& config) {
 
     YAML::Node cfg = YAML::LoadFile(config);
 
-    width = cfg["width"].as<unsigned int>();
-    height = cfg["height"].as<unsigned int>();
-    resolution = cfg["resolution"].as<double>();
+    width = cfg["global"]["width"].as<unsigned int>();
+    height = cfg["global"]["height"].as<unsigned int>();
+    resolution = cfg["global"]["resolution"].as<double>();
+    cnt_limit = cfg["global"]["updateEveryNthLidar"].as<unsigned int>();
 
     std::cout << "Successfully loaded the config" << std::endl;
 }
@@ -50,12 +51,19 @@ void Costmap::UpdatePointCloud(const pcl::PointCloud<pcl::PointXYZI>::Ptr pcl) {
     cur_point_cloud_filtered->clear();
 
     pcl::copyPointCloud(*pcl, *cur_point_cloud);
-    pcl_flag = true;
+
+    UpdateCostmapFlag();
 }
 
-void Costmap::UpdatePose(Eigen::Matrix<double, 4, 4>& trans) {
-    cur_pose = trans;
-    pose_flag = true;
+void Costmap::UpdatePose(Eigen::Matrix<double, 4, 4>& trans) { cur_pose = trans; }
+
+void Costmap::UpdateCostmapFlag() {
+    cnt_iter += 1;
+
+    if (cnt_iter >= cnt_limit) {
+        costmap_flag = true;
+        cnt_iter = 0;
+    }
 }
 
 void Costmap::UpdateCostmap() {
@@ -85,8 +93,7 @@ void Costmap::UpdateCostmap() {
         BresenhamLine(sx, sy, x, y);
     }
 
-    // set pcl_flag
-    pcl_flag = false;
+    costmap_flag = false;
 }
 
 void Costmap::BresenhamLine(int sx, int sy, int ex, int ey) {

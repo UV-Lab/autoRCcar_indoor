@@ -10,9 +10,6 @@ CostmapWrapper::CostmapWrapper(Costmap* pCostmap) : Node("costmap"), mpCostmap(p
     nav_state_subscriber = this->create_subscription<autorccar_interfaces::msg::NavState>(
         "/nav_topic", 10, std::bind(&CostmapWrapper::NavStateCallback, this, std::placeholders::_1));
 
-    costmap_pub_cmd_subscriber = this->create_subscription<std_msgs::msg::Bool>(
-        "/costmap/publish", 10, std::bind(&CostmapWrapper::CostmapPublishCmdCallback, this, std::placeholders::_1));
-
     costmap_save_cmd_subscriber = this->create_subscription<std_msgs::msg::Bool>(
         "/costmap/save", 10, std::bind(&CostmapWrapper::CostmapSaveCmdCallback, this, std::placeholders::_1));
 
@@ -40,11 +37,13 @@ void CostmapWrapper::PointCloudCallback(const livox_ros_driver2::msg::CustomMsg&
         point_cloud_in->push_back(point);
     }
 
-    // update costmap
+    // update pointcloud
     mpCostmap->UpdatePointCloud(point_cloud_in);
 
-    if (mpCostmap->pose_flag) {
+    // update costmap & publish occupancy grid
+    if (mpCostmap->costmap_flag) {
         mpCostmap->UpdateCostmap();
+        CostmapToRosOccupancyGridMsg(false);
     }
 }
 
@@ -55,13 +54,8 @@ void CostmapWrapper::NavStateCallback(const autorccar_interfaces::msg::NavState&
     transformation(1, 3) = msg.position.y;
     transformation(2, 3) = msg.position.z;
 
+    // update pose
     mpCostmap->UpdatePose(transformation);
-}
-
-void CostmapWrapper::CostmapPublishCmdCallback(const std_msgs::msg::Bool& msg) {
-    if (msg.data) {
-        CostmapToRosOccupancyGridMsg(false);
-    }
 }
 
 void CostmapWrapper::CostmapSaveCmdCallback(const std_msgs::msg::Bool& msg) {
