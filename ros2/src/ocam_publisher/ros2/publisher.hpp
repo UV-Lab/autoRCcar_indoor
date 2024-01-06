@@ -75,13 +75,13 @@ class ImagePublisher : public rclcpp::Node {
 
     void publish_image(const cv::Mat &img) {
         sensor_msgs::msg::Image msg;
-        msg.header.frame_id = count_++;  // Set the frame ID for the image
+        msg.header.frame_id = count_++;
         msg.height = img.rows;
         msg.width = img.cols;
+        msg.step = img.cols * img.elemSize();
         msg.encoding = "rgb8";
 
-        // Convert the OpenCV image to ROS2 sensor_msgs/Image format
-        uint32_t size = img.total() * img.elemSize();
+        const uint32_t size = img.total() * img.elemSize();
         msg.data.resize(size);
         memcpy(&msg.data[0], img.data, size);
 
