@@ -12,11 +12,16 @@ int main(int argc, char *argv[]) {
     auto node = std::make_shared<ImagePublisher>();
     node->initialize_config();
 
-    // Use designated port when given
     std::string devPath = node->get_parameter("device_path").as_string();
-    if (devPath.empty()) {
-        if (!update_device_path(devPath)) {
-            RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "oCam-1MGN-U-T is not found");
+    // Use designated port when given
+    if (!devPath.empty()) {
+        if (!std::filesystem::exists(devPath)) {
+            RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Could not found camera device: %s", devPath.c_str());
+            return -1;
+        }
+    } else {
+        if (!find_v4l_device_path(devPath)) {
+            RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "oCam-1MGN-U-T is not found in default path: /dev/v4l/by-id");
             return -1;
         }
     }
