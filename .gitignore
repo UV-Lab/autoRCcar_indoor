@@ -1,7 +1,6 @@
-ros2/build
+build*
 ros2/install
 ros2/log
-Livox-SDK2/build
 ros2/src/livox_ros_driver2/package.xml
 .vscode/
 .git
