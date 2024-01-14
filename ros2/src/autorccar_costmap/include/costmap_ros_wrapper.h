@@ -28,13 +28,16 @@ class CostmapWrapper : public rclcpp::Node {
     rclcpp::Subscription<livox_ros_driver2::msg::CustomMsg>::SharedPtr point_cloud_subscriber;  // livox lidar
     rclcpp::Subscription<autorccar_interfaces::msg::NavState>::SharedPtr nav_state_subscriber;  // navigation output
     rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr costmap_save_cmd_subscriber;
-    rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr occupancy_grid_publisher;
+    rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr global_occupancy_grid_publisher;
+    rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr local_occupancy_grid_publisher;
 
     void PointCloudCallback(const livox_ros_driver2::msg::CustomMsg& msg);
     void NavStateCallback(const autorccar_interfaces::msg::NavState& msg);
     void CostmapSaveCmdCallback(const std_msgs::msg::Bool& msg);
 
-    void CostmapToRosOccupancyGridMsg(bool save_pgm);
+    void PublishGlobalOccupancyGrid(bool save_pgm);
+    void PublishLocalOccupancyGrid();
+    void SaveCostmapAsPgm(const nav_msgs::msg::OccupancyGrid& msg);
 
     pcl::PointCloud<pcl::PointXYZI>::Ptr point_cloud_in;
     Eigen::Matrix<double, 4, 4> transformation;

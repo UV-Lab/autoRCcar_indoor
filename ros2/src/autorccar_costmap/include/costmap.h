@@ -33,22 +33,32 @@ class Costmap {
     void UpdatePose(Eigen::Matrix<double, 4, 4> &trans);
     void UpdateCostmap();
 
-    struct CostmapInfo GetCostmapInfo();
+    struct CostmapInfo GetGlobalCostmapInfo();
+    struct CostmapInfo GetLocalCostmapInfo();
 
    private:
     std::string config;
-    unsigned int width;  // costmap width and height [m]
-    unsigned int height;
-    double resolution;  // costmap resolution [m/cell]
-
     unsigned int cnt_iter;
     unsigned int cnt_limit;
 
-    Eigen::MatrixXd costmap;
-    unsigned int size_x;  // number of cell
-    unsigned int size_y;
-    unsigned int center_x;  // origin cell index
-    unsigned int center_y;
+    // global costmap
+    Eigen::MatrixXd global_costmap;
+    double resolution;  // costmap resolution [m/cell]
+    int global_width;   // costmap width and height [m]
+    int global_height;
+    int global_size_x;  // number of cell
+    int global_size_y;
+    int global_center_x;  // origin cell index
+    int global_center_y;
+
+    // local costmap
+    Eigen::MatrixXd local_costmap;
+    int local_width;
+    int local_height;
+    int local_size_x;  // number of cell
+    int local_size_y;
+    int local_center_x;  // origin cell index
+    int local_center_y;
 
     double P_UNKNOWN = 0.5;
     double P_FREE = 0.4;
@@ -60,7 +70,7 @@ class Costmap {
     Eigen::Matrix<double, 4, 4> cur_pose;
 
     void LoadConfig(const std::string &config);
-    void InitCostmap(unsigned int size_x, unsigned int size_y);
+    void InitCostmap(Eigen::MatrixXd &costmap, int size_x, int size_y);
     void UpdateCostmapFlag();
     bool IsInBounds(int x, int y);
     void BresenhamLine(int sx, int sy, int ex, int ey);
