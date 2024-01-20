@@ -64,7 +64,6 @@ if __name__ == "__main__":
     if not os.path.isfile(bag_file):
         raise FileNotFoundError(f"Bag file '{bag_file}' does not exist.")
 
-    # script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
     output_path = args.output_path or os.path.join(
         os.path.dirname(os.path.abspath(bag_file)), args.topic
     )
