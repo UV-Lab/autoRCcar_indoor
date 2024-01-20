@@ -14,6 +14,24 @@
       pure_pursuiter:
         look_ahead_distance: 1.0 # [m]
 
+    frenet_opitmal:
+      max_speed: 4.0 # [m/s]
+      max_accel: 2.0 # [m/ss]
+      max_curvature: 5.0 # [1/m]
+      max_road_width: 3.0 # [m]
+      d_road_width: 0.5 # road width sampling length [m]
+      dt: 0.2 # [s]
+      max_t: 5.0 # max prediction time [s]
+      min_t: 4.0 # min prediction time [s]
+      d_target_speed: 1.0 # target speed sampling length [m/s]
+      n_speed_sample: 3 # sampling number of target speed
+      robot_radius: 1.0 # [m]
+      k_j: 0.1
+      k_t: 0.1
+      k_d: 1.0
+      k_lat: 1.0
+      k_lon: 1.0
+
     simulator:
       simulation_hz: 500 # [Hz]
       nav_pub_hz: 100 # [Hz]

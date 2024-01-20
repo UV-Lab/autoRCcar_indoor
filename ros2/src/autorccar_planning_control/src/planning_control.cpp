@@ -27,15 +27,18 @@ PlanningControl::PlanningControl(const Parameters& parameters)
     std::cout << "wheelbase: " << parameters_.wheelbase << std::endl;
     std::cout << "max_steering_angle: " << parameters_.max_steering_angle << std::endl;
     std::cout << "goal_reach_threshold: " << parameters_.control.goal_reach_threshold << std::endl;
-    std::cout << "target_speed: " << parameters_.control.target_speed << std::endl;
+    std::cout << "target_speed: " << parameters_.target_speed << std::endl;
     std::cout << "accel: " << parameters_.control.accel << std::endl;
     std::cout << "decel: " << parameters_.control.decel << std::endl;
     std::cout << "control_dt: " << parameters_.control.control_dt << std::endl;
     std::cout << "look_ahead_distance: " << parameters_.control.pure_pursuit.look_ahead_distance << std::endl;
     std::cout << "look_ahead_distance: " << parameters_.control.pure_pursuit.min_look_ahead_distance << std::endl;
+
+    parameters_.frenet.target_speed = parameters_.target_speed;
+    frenet_optimal_path_ = std::make_unique<FrenetOptimalPath>();
 }
 
-void PlanningControl::SetGlobalPath(std::vector<Point>&& global_path, std::vector<double>&& speeds) {
+void PlanningControl::SetGlobalPath(std::vector<Point>&& global_path, std::vector<double>&& /*speeds*/) {
     goal_ = global_path.back();
     cubic_spline_path_.reset();
     got_global_path_ = false;
@@ -43,9 +46,15 @@ void PlanningControl::SetGlobalPath(std::vector<Point>&& global_path, std::vecto
     got_global_path_ = cubic_spline_path_->IsPathGenerated();
 }
 
-void PlanningControl::SetDriveCommand(const DriveCommand drive_command) { drive_command_ = drive_command; }
+void PlanningControl::SetDriveCommand(const DriveCommand& drive_command) { drive_command_ = drive_command; }
 
 void PlanningControl::SetCurrentTargetSpeed(const double speed) { current_target_speed_ = speed; }
+
+void PlanningControl::SetCurrentState(const State& state) { current_state_ = state; }
+
+void PlanningControl::PlanOnce() {
+    current_frenet_path_ = frenet_optimal_path_->Planning(cubic_spline_path_, current_state_);
+}
 
 bool PlanningControl::GoalReached(const State& state) const {
     Point current_pos(state.pos.x(), state.pos.y());
@@ -54,7 +63,7 @@ bool PlanningControl::GoalReached(const State& state) const {
 
 bool PlanningControl::GotStartCommand() const { return drive_command_ == DriveCommand::kStart; }
 
-ControlCommand PlanningControl::GenerateMotionCommand(const State& current_state) {
+ControlCommand PlanningControl::GenerateMotionCommand() {
     if (!got_global_path_) {
         std::cout << "Have not received global path yet." << std::endl;
         return {0.0, 0.0};
@@ -65,16 +74,18 @@ ControlCommand PlanningControl::GenerateMotionCommand(const State& current_state
         return {0.0, 0.0};
     }
 
-    if (GoalReached(current_state)) {
+    if (GoalReached(current_state_)) {
         std::cout << "Final Goal Reached!!" << std::endl;
         return {0.0, 0.0};
     }
 
-    double speed = CalcSpeedCommand(current_state, parameters_.control.target_speed);
+    // TODO(luke7637): using current_frenet_path_ as local path.
+
+    double speed = CalcSpeedCommand(current_state_, parameters_.target_speed);
 
     if (speed == 0.0) return {0.0, 0.0};
 
-    auto [is_steering_valid, steering_angle] = CalculateSteeringCommand(current_state);
+    auto [is_steering_valid, steering_angle] = CalculateSteeringCommand(current_state_);
 
     if (!is_steering_valid) {
         std::cout << "Steering command is invalid." << std::endl;
