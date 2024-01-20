@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-set(PROJECT_NAME ocam)
+set(PROJECT_NAME ocam_publisher)
 project(${PROJECT_NAME} LANGUAGES CXX)
 
 # Find dependencies

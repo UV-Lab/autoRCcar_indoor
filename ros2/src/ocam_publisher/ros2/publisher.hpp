@@ -13,11 +13,12 @@
 // to work well with ros2's signal handler
 void sigint_handler(int signal_value) { (void)signal_value; }
 
-bool update_device_path(std::string &devPath) {
-    std::vector<std::string> paths;
+bool find_v4l_device_path(std::string &devPath) {
+    if (!std::filesystem::exists("/dev/v4l/by-id")) return false;
 
     // Withrobot camera id would be like
     // "usb-WITHROBOT_Inc._oCam-1CGN-U-T_SN_35E27013-video-index0"
+    std::vector<std::string> paths;
     for (const auto &entry : std::filesystem::directory_iterator("/dev/v4l/by-id")) {
         if (entry.is_character_file() && (entry.path().filename().string().find("1CGN-U-T") != std::string::npos)) {
             auto path = entry.path().parent_path();
@@ -74,13 +75,13 @@ class ImagePublisher : public rclcpp::Node {
 
     void publish_image(const cv::Mat &img) {
         sensor_msgs::msg::Image msg;
-        msg.header.frame_id = count_++;  // Set the frame ID for the image
+        msg.header.frame_id = count_++;
         msg.height = img.rows;
         msg.width = img.cols;
+        msg.step = img.cols * img.elemSize();
         msg.encoding = "rgb8";
 
-        // Convert the OpenCV image to ROS2 sensor_msgs/Image format
-        uint32_t size = img.total() * img.elemSize();
+        const uint32_t size = img.total() * img.elemSize();
         msg.data.resize(size);
         memcpy(&msg.data[0], img.data, size);
 
