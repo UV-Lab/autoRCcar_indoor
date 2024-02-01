@@ -3,32 +3,32 @@
 #include "costmap.h"
 #include "rclcpp/rclcpp.hpp"
 
-CostmapWrapper::CostmapWrapper(Costmap* pCostmap) : Node("costmap"), mpCostmap(pCostmap) {
-    point_cloud_subscriber = this->create_subscription<livox_ros_driver2::msg::CustomMsg>(
+CostmapWrapper::CostmapWrapper(Costmap* pCostmap) : Node("costmap"), mpCostmap_(pCostmap) {
+    point_cloud_subscriber_ = this->create_subscription<livox_ros_driver2::msg::CustomMsg>(
         "livox/lidar", 10, std::bind(&CostmapWrapper::PointCloudCallback, this, std::placeholders::_1));
 
-    nav_state_subscriber = this->create_subscription<autorccar_interfaces::msg::NavState>(
+    nav_state_subscriber_ = this->create_subscription<autorccar_interfaces::msg::NavState>(
         "/nav_topic", 10, std::bind(&CostmapWrapper::NavStateCallback, this, std::placeholders::_1));
 
-    costmap_save_cmd_subscriber = this->create_subscription<std_msgs::msg::Bool>(
+    costmap_save_cmd_subscriber_ = this->create_subscription<std_msgs::msg::Bool>(
         "/costmap/save", 10, std::bind(&CostmapWrapper::CostmapSaveCmdCallback, this, std::placeholders::_1));
 
-    global_occupancy_grid_publisher = this->create_publisher<nav_msgs::msg::OccupancyGrid>("occupancy_grid", 10);
+    global_occupancy_grid_publisher_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("occupancy_grid", 10);
 
-    local_occupancy_grid_publisher = this->create_publisher<nav_msgs::msg::OccupancyGrid>("occupancy_grid/local", 10);
+    local_occupancy_grid_publisher_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("occupancy_grid/local", 10);
 
     // Initialization
-    point_cloud_in.reset(new pcl::PointCloud<pcl::PointXYZI>());
-    point_cloud_in->clear();
-    transformation.setIdentity();
+    point_cloud_in_.reset(new pcl::PointCloud<pcl::PointXYZI>());
+    point_cloud_in_->clear();
+    transformation_.setIdentity();
 }
 
 void CostmapWrapper::PointCloudCallback(const livox_ros_driver2::msg::CustomMsg& msg) {
     // Convert livox msg to pcl msg
-    point_cloud_in->clear();  // Removes all points in a cloud and sets the width and height to 0
-    point_cloud_in->reserve(msg.point_num);
-    point_cloud_in->header.frame_id = msg.header.frame_id;
-    point_cloud_in->header.stamp = (uint64_t)((msg.header.stamp.sec * 1e9 + msg.header.stamp.nanosec) / 1000);
+    point_cloud_in_->clear();  // Removes all points in a cloud and sets the width and height to 0
+    point_cloud_in_->reserve(msg.point_num);
+    point_cloud_in_->header.frame_id = msg.header.frame_id;
+    point_cloud_in_->header.stamp = (uint64_t)((msg.header.stamp.sec * 1e9 + msg.header.stamp.nanosec) / 1000);
 
     pcl::PointXYZI point;
     for (uint i = 0; i < msg.point_num - 1; i++) {
@@ -36,29 +36,29 @@ void CostmapWrapper::PointCloudCallback(const livox_ros_driver2::msg::CustomMsg&
         point.y = msg.points[i].y;
         point.z = msg.points[i].z;
         point.intensity = msg.points[i].reflectivity;
-        point_cloud_in->push_back(point);
+        point_cloud_in_->push_back(point);
     }
 
     // Update pointcloud
-    mpCostmap->UpdatePointCloud(point_cloud_in);
+    mpCostmap_->UpdatePointCloud(point_cloud_in_);
 
     // Update global costmap & publish occupancy grid
-    if (mpCostmap->costmap_flag) {
-        mpCostmap->UpdateCostmap();
+    if (mpCostmap_->costmap_flag_) {
+        mpCostmap_->UpdateCostmap();
         PublishGlobalOccupancyGrid(false);
         PublishLocalOccupancyGrid();
     }
 }
 
 void CostmapWrapper::NavStateCallback(const autorccar_interfaces::msg::NavState& msg) {
-    transformation.block<3, 3>(0, 0) =
+    transformation_.block<3, 3>(0, 0) =
         Eigen::Quaterniond(msg.quaternion.w, msg.quaternion.x, msg.quaternion.y, msg.quaternion.z).toRotationMatrix();
-    transformation(0, 3) = msg.position.x;
-    transformation(1, 3) = msg.position.y;
-    transformation(2, 3) = msg.position.z;
+    transformation_(0, 3) = msg.position.x;
+    transformation_(1, 3) = msg.position.y;
+    transformation_(2, 3) = msg.position.z;
 
     // Update pose
-    mpCostmap->UpdatePose(transformation);
+    mpCostmap_->UpdatePose(transformation_);
 }
 
 void CostmapWrapper::CostmapSaveCmdCallback(const std_msgs::msg::Bool& msg) {
@@ -68,7 +68,7 @@ void CostmapWrapper::CostmapSaveCmdCallback(const std_msgs::msg::Bool& msg) {
 }
 
 void CostmapWrapper::PublishGlobalOccupancyGrid(bool save_pgm) {
-    struct CostmapInfo info = mpCostmap->GetGlobalCostmapInfo();
+    CostmapInfo info = mpCostmap_->GetGlobalCostmapInfo();
 
     nav_msgs::msg::OccupancyGrid occupancy_grid_map;
     occupancy_grid_map.header.stamp = this->get_clock()->now();
@@ -91,7 +91,7 @@ void CostmapWrapper::PublishGlobalOccupancyGrid(bool save_pgm) {
         }
     }
 
-    global_occupancy_grid_publisher->publish(occupancy_grid_map);
+    global_occupancy_grid_publisher_->publish(occupancy_grid_map);
 
     if (save_pgm) {
         SaveCostmapAsPgm(occupancy_grid_map);
@@ -99,7 +99,7 @@ void CostmapWrapper::PublishGlobalOccupancyGrid(bool save_pgm) {
 }
 
 void CostmapWrapper::PublishLocalOccupancyGrid() {
-    struct CostmapInfo info = mpCostmap->GetLocalCostmapInfo();
+    CostmapInfo info = mpCostmap_->GetLocalCostmapInfo();
 
     nav_msgs::msg::OccupancyGrid occupancy_grid_map;
     occupancy_grid_map.header.stamp = this->get_clock()->now();
@@ -122,7 +122,7 @@ void CostmapWrapper::PublishLocalOccupancyGrid() {
         }
     }
 
-    local_occupancy_grid_publisher->publish(occupancy_grid_map);
+    local_occupancy_grid_publisher_->publish(occupancy_grid_map);
 }
 
 void CostmapWrapper::SaveCostmapAsPgm(const nav_msgs::msg::OccupancyGrid& msg) {
