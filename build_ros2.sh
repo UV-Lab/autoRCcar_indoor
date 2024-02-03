@@ -9,13 +9,5 @@ else
 fi
 
 cd ros2
-colcon build --packages-select autorccar_interfaces
-if [ $? -ne 0 ]; then
-    echo "[autorccar_interfaces] build error!"
-    exit 1
-fi
-source install/setup.bash
-
-## remain packages
 colcon build
 source install/setup.bash

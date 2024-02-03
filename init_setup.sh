@@ -17,6 +17,9 @@ sudo apt-get install libv4l-dev libudev-dev
 ## GCS
 pip install numpy PyQt5 pyqtgraph
 
+## CostMap
+sudo apt-get install -y libeigen3-dev libyaml-cpp-dev
+
 ## Livox-SDK2
 cd Livox-SDK2
 if [ -d "build" ]; then
