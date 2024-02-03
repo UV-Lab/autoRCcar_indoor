@@ -10,6 +10,7 @@
 #include <eigen3/Eigen/Dense>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -22,7 +23,7 @@ struct CostmapInfo {
     unsigned int size_y = 0;    // map height [cell]
     double origin_pos_x = 0.0;  // real-world pose of the cell (0,0) in the map.
     double origin_pos_y = 0.0;
-    Eigen::MatrixXd* costmap;
+    Eigen::MatrixXd* ptr_costmap;
 };
 
 class Costmap {

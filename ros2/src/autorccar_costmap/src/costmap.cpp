@@ -113,6 +113,7 @@ void Costmap::UpdateCellsOnBresenhamLine(int sx, int sy, int ex, int ey) {
     int y = sy;
 
     std::vector<Eigen::Vector2i> line;
+    line.reserve(global_size_.x() + global_size_.y());
 
     if (dx > dy) {
         // when 0 < |slope| < 1
@@ -190,7 +191,7 @@ struct CostmapInfo Costmap::GetGlobalCostmapInfo() {
     info.resolution = resolution_;
     info.origin_pos_x = global_center_.x() * resolution_ * (-1);  // assume (global_center_x, global_center_y) = (0,0)
     info.origin_pos_y = global_center_.y() * resolution_ * (-1);
-    info.costmap = &global_costmap_;
+    info.ptr_costmap = &global_costmap_;
 
     return info;
 }
@@ -218,7 +219,7 @@ struct CostmapInfo Costmap::GetLocalCostmapInfo() {
     info.resolution = resolution_;
     info.origin_pos_x = (px - global_center_.x() - local_center_.x()) * resolution_;
     info.origin_pos_y = (py - global_center_.y() - local_center_.y()) * resolution_;
-    info.costmap = &local_costmap_;
+    info.ptr_costmap = &local_costmap_;
 
     return info;
 }

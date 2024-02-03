@@ -78,10 +78,11 @@ void CostmapWrapper::PublishGlobalOccupancyGrid(bool save_pgm) {
     occupancy_grid_map.info.resolution = static_cast<float>(info.resolution);
     occupancy_grid_map.info.origin.position.x = static_cast<float>(info.origin_pos_x);
     occupancy_grid_map.info.origin.position.y = static_cast<float>(info.origin_pos_y);
+    occupancy_grid_map.data.reserve(info.size_x * info.size_y);
 
     for (size_t i = 0; i < info.size_x * info.size_y; i++) {
         // Convert log odds to probability(0~1)
-        double logOdds = info.costmap->data()[i];
+        double logOdds = info.ptr_costmap->data()[i];
         double prob = std::exp(logOdds) / (1 + std::exp(logOdds));
 
         if (prob == 0.5) {
@@ -112,7 +113,7 @@ void CostmapWrapper::PublishLocalOccupancyGrid() {
 
     for (size_t i = 0; i < info.size_x * info.size_y; i++) {
         // convert log odds to probability(0~1)
-        double logOdds = info.costmap->data()[i];
+        double logOdds = info.ptr_costmap->data()[i];
         double prob = std::exp(logOdds) / (1 + std::exp(logOdds));
 
         if (prob == 0.5) {
