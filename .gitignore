@@ -5,3 +5,7 @@ ros2/src/livox_ros_driver2/package.xml
 .vscode/
 .git
 __pycache__/
+projects/autoRCcar_rl/autoRCcar_gym.egg-info
+projects/autoRCcar_rl/train/model
+projects/autoRCcar_rl/train/log
+projects/autoRCcar_rl/test/.ipynb_checkpoints
