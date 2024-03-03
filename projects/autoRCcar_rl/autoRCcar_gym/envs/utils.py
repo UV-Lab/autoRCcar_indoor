@@ -38,6 +38,14 @@ def state_plot(dat, info):
         if np.abs(dat['err_offset'][-1]) > 0.3:
             plt.scatter(dat['x'][-1], dat['y'][-1], color='r', marker='x', s=200, label='terminated')
     
+    if info['task'] == 'avoid':
+        theta = np.linspace(0, 2*np.pi, 100)
+        radius = info['obstacle'][1]
+        obx = info['obstacle'][0][0] + radius * np.cos(theta)
+        oby = info['obstacle'][0][1] + radius * np.sin(theta)
+        plt.scatter(info['obstacle'][0][0], info['obstacle'][0][1], color='m', s=100,  label='Obstacle')
+        plt.plot(obx, oby)
+
     # elif info['task'] == 'waypoint':
     plt.scatter(dat['x'], dat['y'], s=7, label='vehicle')
     plt.scatter(dat['x'][0], dat['y'][0], color='b', marker='d', s=80, label='start')
@@ -114,7 +122,7 @@ def data_plot(dat, info):
 def data_record(i, result, obs, action, reward, info):
     if info['task'] == 'straight':
         yaw = np.degrees(info['state'][3])
-    elif info['task'] == 'waypoint':
+    elif info['task'] == 'waypoint' or info['task'] == 'avoid':
         yaw = np.degrees(obs[3])
 
     heading = None
@@ -148,5 +156,15 @@ def data_record(i, result, obs, action, reward, info):
         
         result['err_dist'].append(obs[4])
         result['err_yaw'].append(np.degrees(obs[5]))
+
+    elif info['task'] == 'avoid':
+        result['x'].append(obs[0])
+        result['y'].append(obs[1])
+        result['speed'].append(obs[2])
+        result['yaw'].append(heading)
+        
+        result['err_dist'].append(obs[5])
+        result['err_yaw'].append(np.degrees(obs[6]))
+        result['obs_err'].append(obs[7])
 
     return result

@@ -27,7 +27,8 @@ print(f"goal : {info['goal']}, init_heading : {info['init_heading']}")
 
 result = {'t':[], 'x':[], 'y':[], 'speed':[], 'yaw':[],
           'u_delta':[], 'u_v':[], 'reward':[],
-          'err_offset':[], 'err_dist':[], 'err_yaw':[]}
+          'err_offset':[], 'err_dist':[], 'err_yaw':[],
+          'obs_err':[]}
 
 loop = 0
 total_reward = 0

@@ -89,3 +89,18 @@ class Task:
             dHd = 2*np.pi + dHd
 
         return dHd
+    
+    def _is_collision(self):
+        colChk = False
+
+        err_x = self.ob_pos[0] - self.state[0]
+        err_y = self.ob_pos[1] - self.state[1]
+
+        obstacle_error = np.sqrt(err_x*err_x + err_y*err_y) - self.ob_radius
+
+        if obstacle_error <= 0:
+            colChk = True
+        else:
+            colChk = False
+
+        return colChk, obstacle_error
