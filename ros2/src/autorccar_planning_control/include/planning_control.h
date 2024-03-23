@@ -7,7 +7,9 @@
 #include <utility>
 #include <vector>
 
+#include "common.h"
 #include "cubic_spline_path.h"
+#include "frenet_optimal_path.h"
 
 namespace autorccar {
 namespace planning_control {
@@ -15,21 +17,12 @@ namespace planning_control {
 
 enum class DriveCommand { kStop = 0, kStart };
 
+// Aliases for convenience.
 using Point = Eigen::Vector2d;
-
-struct State {
-    double timestamp = 0.0;
-    Eigen::Vector3d pos;
-    Eigen::Vector3d vel;
-    Eigen::Quaterniond quat;
-    Eigen::Vector3d accel;
-    Eigen::Vector3d ang_vel;
-};
-
-struct ControlCommand {
-    double speed = 0.0;
-    double steering_angle = 0.0;
-};
+using common::ControlCommand;
+using common::State;
+using frenet_optimal_path::FrenetOptimalPath;
+using frenet_optimal_path::FrenetPath;
 
 struct PurePursuitParameters {
     double min_look_ahead_distance = 0.3;
@@ -38,7 +31,6 @@ struct PurePursuitParameters {
 
 struct ControlParameters {
     double goal_reach_threshold = 0.3;
-    double target_speed = 0.0;
     double accel = 0.0;
     double decel = 0.0;
     double control_dt = 0.0;
@@ -48,7 +40,9 @@ struct ControlParameters {
 struct Parameters {
     double wheelbase = 0.0;
     double max_steering_angle = 0.0;
+    double target_speed = 0.0;
     ControlParameters control;
+    frenet_optimal_path::Parameters frenet;
 };
 
 class PlanningControl {
@@ -61,9 +55,11 @@ class PlanningControl {
     explicit PlanningControl(const Parameters& parameters);
 
     void SetGlobalPath(std::vector<Point>&& global_path, std::vector<double>&& speeds);
-    void SetDriveCommand(const DriveCommand drive_command);
+    void SetDriveCommand(const DriveCommand& drive_command);
     void SetCurrentTargetSpeed(const double speed);
-    ControlCommand GenerateMotionCommand(const State& current_state);
+    void SetCurrentState(const State& state);
+    void PlanOnce();
+    ControlCommand GenerateMotionCommand();
     Point GetLookAheadPoint();
 
    private:
@@ -82,9 +78,11 @@ class PlanningControl {
     double current_target_speed_ = 0.0;
     Point goal_;
     Point look_ahead_point_{0.0, 0.0};
-    std::vector<Point> global_path_;
-    std::unique_ptr<CubicSplinePath> cubic_spline_path_;
     bool got_global_path_ = false;
+    State current_state_;
+    std::unique_ptr<CubicSplinePath> cubic_spline_path_;
+    std::unique_ptr<FrenetOptimalPath> frenet_optimal_path_;
+    FrenetPath current_frenet_path_{};
 };
 
 }  // namespace planning_control

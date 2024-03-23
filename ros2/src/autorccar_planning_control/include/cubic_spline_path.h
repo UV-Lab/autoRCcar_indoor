@@ -16,6 +16,8 @@ struct Reference {
     Point point;
     double heading;
     double curvature;
+    double distance;
+    double remain_distance;
 };
 
 class CubicSpline1D {
@@ -79,12 +81,14 @@ class CubicSplinePath {
     bool IsPathGenerated();
     void InvalidateCurrentPathIndex();
     Reference ReferencePoint(const Point& position);
+    Reference ReferencePoint(const double distance);
     double GetRemainDistance(const Point& position);
 
    private:
     std::pair<int, double> FindPathIndexAndDeltaDistance(const Point& position, int current_idx);
     Path path_;
     CubicSpline2D cubic_spline_path_;
+    double total_distance_;
     bool current_path_idx_valid_ = false;
     int current_path_idx_ = 0;
     bool path_generated_ = false;

@@ -7,15 +7,16 @@
 #include "autorccar_interfaces/msg/control_command.hpp"
 #include "autorccar_interfaces/msg/nav_state.hpp"
 #include "autorccar_interfaces/msg/path.hpp"
+#include "common.h"
 #include "geometry_msgs/msg/twist.hpp"
 #include "geometry_msgs/msg/vector3.hpp"
+#include "hw_control.h"
 #include "nav_msgs/msg/odometry.hpp"
 #include "planning_control.h"
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include "std_msgs/msg/int8.hpp"
 #include "visualization_msgs/msg/marker_array.hpp"
-#include "hw_control.h"
 
 namespace {
 
@@ -76,8 +77,7 @@ class PlanningControlNode : public rclcpp::Node {
                                  parameters_.max_steering_angle);
         get_parameter_or<double>("controller.goal_reach_threshold", parameters_.control.goal_reach_threshold,
                                  parameters_.control.goal_reach_threshold);
-        get_parameter_or<double>("controller.target_speed", parameters_.control.target_speed,
-                                 parameters_.control.target_speed);
+        get_parameter_or<double>("controller.target_speed", parameters_.target_speed, parameters_.target_speed);
         get_parameter_or<int>("controller.nav_hz", nav_hz_, nav_hz_);
         get_parameter_or<int>("controller.control_hz", control_hz_, control_hz_);
         nav_sampling_period_ = nav_hz_ / control_hz_;
@@ -87,6 +87,30 @@ class PlanningControlNode : public rclcpp::Node {
         get_parameter_or<double>("controller.pure_pursuiter.look_ahead_distance",
                                  parameters_.control.pure_pursuit.look_ahead_distance,
                                  parameters_.control.pure_pursuit.look_ahead_distance);
+        get_parameter_or<double>("frenet_optimal.max_speed", parameters_.frenet.max_speed,
+                                 parameters_.frenet.max_speed);
+        get_parameter_or<double>("frenet_optimal.max_accel", parameters_.frenet.max_accel,
+                                 parameters_.frenet.max_accel);
+        get_parameter_or<double>("frenet_optimal.max_curvature", parameters_.frenet.max_curvature,
+                                 parameters_.frenet.max_curvature);
+        get_parameter_or<double>("frenet_optimal.max_road_width", parameters_.frenet.max_road_width,
+                                 parameters_.frenet.max_road_width);
+        get_parameter_or<double>("frenet_optimal.d_road_width", parameters_.frenet.d_road_width,
+                                 parameters_.frenet.d_road_width);
+        get_parameter_or<double>("frenet_optimal.dt", parameters_.frenet.dt, parameters_.frenet.dt);
+        get_parameter_or<double>("frenet_optimal.max_t", parameters_.frenet.max_t, parameters_.frenet.max_t);
+        get_parameter_or<double>("frenet_optimal.min_t", parameters_.frenet.min_t, parameters_.frenet.min_t);
+        get_parameter_or<double>("frenet_optimal.d_target_speed", parameters_.frenet.d_target_speed,
+                                 parameters_.frenet.d_target_speed);
+        get_parameter_or<int>("frenet_optimal.n_speed_sample", parameters_.frenet.n_speed_sample,
+                              parameters_.frenet.n_speed_sample);
+        get_parameter_or<double>("frenet_optimal.robot_radius", parameters_.frenet.robot_radius,
+                                 parameters_.frenet.robot_radius);
+        get_parameter_or<double>("frenet_optimal.k_j", parameters_.frenet.k_j, parameters_.frenet.k_j);
+        get_parameter_or<double>("frenet_optimal.k_t", parameters_.frenet.k_t, parameters_.frenet.k_t);
+        get_parameter_or<double>("frenet_optimal.k_d", parameters_.frenet.k_d, parameters_.frenet.k_d);
+        get_parameter_or<double>("frenet_optimal.k_lat", parameters_.frenet.k_lat, parameters_.frenet.k_lat);
+        get_parameter_or<double>("frenet_optimal.k_lon", parameters_.frenet.k_lon, parameters_.frenet.k_lon);
     }
 
     void NavStateCallback(const autorccar_interfaces::msg::NavState& msg) {
@@ -98,7 +122,7 @@ class PlanningControlNode : public rclcpp::Node {
     }
 
     void GenerateControlCommand(const autorccar_interfaces::msg::NavState& msg) const {
-        autorccar::planning_control::planning_control::State state;
+        autorccar::planning_control::common::State state;
 
         state.timestamp = msg.timestamp.sec + msg.timestamp.nanosec * 1e-9;
         state.pos << msg.position.x, msg.position.y, msg.position.z;
@@ -109,9 +133,10 @@ class PlanningControlNode : public rclcpp::Node {
         state.quat.z() = msg.quaternion.z;
         state.accel << msg.acceleration.x, msg.acceleration.y, msg.acceleration.z;
         state.ang_vel << msg.angular_velocity.x, msg.angular_velocity.y, msg.angular_velocity.z;
+        planning_controller_->SetCurrentState(state);
 
         autorccar::planning_control::planning_control::ControlCommand control_command;
-        control_command = planning_controller_->GenerateMotionCommand(state);
+        control_command = planning_controller_->GenerateMotionCommand();
 
         autorccar_interfaces::msg::ControlCommand control_command_msg;
         control_command_msg.speed = control_command.speed;
@@ -122,7 +147,7 @@ class PlanningControlNode : public rclcpp::Node {
         hw.msg.x = control_command_msg.steering_angle;
         hw.msg.y = control_command_msg.speed;
         hw.msg.z = hw.cmdMode;
-        hw.uart_tx(hw.fd, hw.msg); 
+        hw.uart_tx(hw.fd, hw.msg);
     }
 
     void GcsCommandCallback(const std_msgs::msg::Int8& msg) const {

@@ -117,7 +117,7 @@ Point CubicSpline2D::CalculatePosition(double s, int idx) const {
 }
 
 double CubicSpline2D::CalculateHeading(double s, int idx) const {
-    return atan2(cubic_spline_y_->CalculateFirstDerivative(s, idx), cubic_spline_x_->CalculateFirstDerivative(s, idx));
+    return std::atan2(cubic_spline_y_->CalculateFirstDerivative(s, idx), cubic_spline_x_->CalculateFirstDerivative(s, idx));
 }
 
 double CubicSpline2D::CalculateCurvature(double s, int idx) const {
@@ -134,6 +134,7 @@ CubicSplinePath::CubicSplinePath(Path&& input_path) : path_(std::move(input_path
         std::cout << "Path must have at least two points." << std::endl;
         path_generated_ = false;
     }
+    total_distance_ = cubic_spline_path_.GetDistance(static_cast<int>(path_.size()) - 1);
     path_generated_ = true;
 }
 
@@ -162,32 +163,81 @@ Reference CubicSplinePath::ReferencePoint(const Point& position) {
     Point closest_point;
     double heading;
     double curvature;
+    double distance;
+    double remain_distance;
+
     if (path_idx == static_cast<int>(path_.size()) - 1) {
         heading = cubic_spline_path_.CalculateHeading(cubic_spline_path_.GetDistance(path_idx), path_idx - 1);
         Point delta_position(delta_distance * cos(heading), delta_distance * sin(heading));
         closest_point = path_.at(path_idx) + delta_position;
         curvature = 0.0;
+        distance = cubic_spline_path_.GetDistance(path_idx) + delta_distance;
+        remain_distance = total_distance_ - distance;
         path_idx = path_idx - 1;
     } else if (path_idx == -1) {
         heading = cubic_spline_path_.CalculateHeading(0, 0);
         Point delta_position(delta_distance * cos(heading), delta_distance * sin(heading));
         closest_point = path_.at(0) + delta_position;
         curvature = 0.0;
+        distance = delta_distance;
+        remain_distance = total_distance_ - distance;
         path_idx = 0;
     } else {
-        double distance = cubic_spline_path_.GetDistance(path_idx) + delta_distance;
+        distance = cubic_spline_path_.GetDistance(path_idx) + delta_distance;
         closest_point = cubic_spline_path_.CalculatePosition(distance, path_idx);
         heading = cubic_spline_path_.CalculateHeading(distance, path_idx);
         curvature = cubic_spline_path_.CalculateCurvature(distance, path_idx);
+        remain_distance = total_distance_ - distance;
     }
 
     current_path_idx_ = path_idx;
 
-    return {closest_point, heading, curvature};
+    return {closest_point, heading, curvature, distance, remain_distance};
+}
+
+Reference CubicSplinePath::ReferencePoint(const double distance) {
+    int path_idx = 0;
+    if (distance >= total_distance_) {
+        path_idx = static_cast<int>(path_.size()) - 1;
+    } else if (distance <= 0) {
+        path_idx = -1;
+    } else {
+        for (int i = 0; i < static_cast<int>(path_.size()) - 1; i++) {
+            if (cubic_spline_path_.GetDistance(i) <= distance && distance < cubic_spline_path_.GetDistance(i + 1)) {
+                path_idx = i;
+            }
+        }
+    }
+
+    Point closest_point;
+    double heading;
+    double curvature;
+    double remain_distance;
+
+    if (path_idx == static_cast<int>(path_.size()) - 1) {
+        heading = cubic_spline_path_.CalculateHeading(cubic_spline_path_.GetDistance(path_idx), path_idx - 1);
+        double delta_distance = distance - total_distance_;
+        Point delta_position(delta_distance * cos(heading), delta_distance * sin(heading));
+        closest_point = path_.at(path_idx) + delta_position;
+        curvature = 0.0;
+        remain_distance = total_distance_ - distance;
+    } else if (path_idx == -1) {
+        heading = cubic_spline_path_.CalculateHeading(0, 0);
+        Point delta_position(distance * cos(heading), distance * sin(heading));
+        closest_point = path_.at(0) + delta_position;
+        curvature = 0.0;
+        remain_distance = total_distance_ - distance;
+    } else {
+        closest_point = cubic_spline_path_.CalculatePosition(distance, path_idx);
+        heading = cubic_spline_path_.CalculateHeading(distance, path_idx);
+        curvature = cubic_spline_path_.CalculateCurvature(distance, path_idx);
+        remain_distance = total_distance_ - distance;
+    }
+
+    return {closest_point, heading, curvature, distance, remain_distance};
 }
 
 double CubicSplinePath::GetRemainDistance(const Point& position) {
-    double total_distance = cubic_spline_path_.GetDistance(static_cast<int>(path_.size()) - 1);
     auto [path_idx, delta_distance] = FindPathIndexAndDeltaDistance(position, current_path_idx_);
 
     if (path_idx == static_cast<int>(path_.size()) - 1) {
@@ -197,7 +247,7 @@ double CubicSplinePath::GetRemainDistance(const Point& position) {
     }
     double current_distance = cubic_spline_path_.GetDistance(path_idx) + delta_distance;
 
-    return total_distance - current_distance;
+    return total_distance_ - current_distance;
 }
 
 std::pair<int, double> CubicSplinePath::FindPathIndexAndDeltaDistance(const Point& position, int current_idx) {
