@@ -106,6 +106,11 @@ def data_plot(dat, info):
         plt.xlabel('Epoch')
         plt.ylabel('Angle Error [deg]')
         plt.grid(True)
+    elif info['task'] == 'avoid':
+        plt.plot(dat['t'], dat['err_yaw'])
+        plt.xlabel('Epoch')
+        plt.ylabel('Angle Error [deg]')
+        plt.grid(True)
 
     ax1 = plt.subplot(2,3,6)
     ax1.set_xlabel('Epoch')
@@ -125,11 +130,11 @@ def data_record(i, result, obs, action, reward, info):
     elif info['task'] == 'waypoint' or info['task'] == 'avoid':
         yaw = np.degrees(obs[3])
 
-    heading = None
-    if yaw < 0:
-        heading = 360 + yaw
-    else:
-        heading = yaw #% 360
+    # heading = yaw
+    # if yaw < 0:
+    #     heading = 360 + yaw
+    # else:
+    #     heading = yaw #% 360
 
     result['t'].append(i)
 
@@ -142,7 +147,7 @@ def data_record(i, result, obs, action, reward, info):
         result['x'].append(info['state'][0])
         result['y'].append(info['state'][1])
         result['speed'].append(info['state'][2])
-        result['yaw'].append(heading)
+        result['yaw'].append(yaw)
 
         result['err_dist'].append(obs[0])
         result['err_offset'].append(obs[1])
@@ -152,7 +157,7 @@ def data_record(i, result, obs, action, reward, info):
         result['x'].append(obs[0])
         result['y'].append(obs[1])
         result['speed'].append(obs[2])
-        result['yaw'].append(heading)
+        result['yaw'].append(yaw)
         
         result['err_dist'].append(obs[4])
         result['err_yaw'].append(np.degrees(obs[5]))
@@ -161,10 +166,10 @@ def data_record(i, result, obs, action, reward, info):
         result['x'].append(obs[0])
         result['y'].append(obs[1])
         result['speed'].append(obs[2])
-        result['yaw'].append(heading)
+        result['yaw'].append(yaw)
         
-        result['err_dist'].append(obs[5])
-        result['err_yaw'].append(np.degrees(obs[6]))
-        result['obs_err'].append(obs[7])
+        result['err_dist'].append(obs[4])
+        result['err_yaw'].append(np.degrees(obs[5]))
+        result['obs_err'].append(obs[6])
 
     return result

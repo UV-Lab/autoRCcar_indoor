@@ -2,7 +2,8 @@ import gym
 import os
 import autoRCcar_gym
 import numpy as np
-from stable_baselines3 import PPO
+from sb3_contrib import TQC
+
 import matplotlib.pyplot as plt
 import autoRCcar_gym.envs.utils as util
 import sys
@@ -17,7 +18,7 @@ else:
     model_name = 'model/'+ff
 
 env = gym.make(task)
-model = PPO.load(model_name, env=env)
+model = TQC.load(model_name, env=env)
 
 obs, info = env.reset()
 print(f"Model : {model_name}, Task : {env.task}")
@@ -34,15 +35,13 @@ loop = 0
 total_reward = 0
 while True:
     action, _states = model.predict(obs, deterministic=True)
-    # print(action)
     obs, reward, dones, _, info = env.step(action)
 
     total_reward += reward
-    obs = info['obs']
     
     ## data record
-    # obs = info['obs']
-    result = util.data_record(loop, result, obs, action, reward, info)
+    obs_org = info['obs']
+    result = util.data_record(loop, result, obs_org, action, reward, info)
 
     if dones:
         done = info['done']

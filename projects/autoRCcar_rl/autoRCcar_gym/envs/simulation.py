@@ -24,10 +24,14 @@ class SimCar:
         yaw_rate = (speed / l) * math.tan(u_delta)
         speed = speed * 0.1 + u_v * (1 - 0.1)
 
-        if yaw >= np.pi:
-            yaw = 2*np.pi - yaw
-        elif yaw <= -np.pi:
+        if yaw >= 2*np.pi:
+            yaw = yaw - 2*np.pi
+        elif yaw < 0:
             yaw = 2*np.pi + yaw
+        # if yaw > np.pi:
+        #     yaw = yaw - 2*np.pi
+        # elif yaw < -np.pi:
+        #     yaw = 2*np.pi + yaw
 
         state = np.array([x, y, speed, yaw, yaw_rate], dtype=np.float32)
 

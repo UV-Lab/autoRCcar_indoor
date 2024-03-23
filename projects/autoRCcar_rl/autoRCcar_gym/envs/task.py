@@ -73,19 +73,19 @@ class Task:
         else:
             return False, yaw_diff
 
-    def calc_delta_heading(self):
+    def calc_delta_heading(self, target_pos):
         yaw = self.state[3]
         
-        target_x = self.target_goal[0] - self.state[0]
-        target_y = self.target_goal[1] - self.state[1]
+        target_x = target_pos[0] - self.state[0]
+        target_y = target_pos[1] - self.state[1]
 
         angle_rad = math.atan2(target_y, target_x)
         # angle_deg = math.degrees(angle_rad)
 
         dHd = np.abs(yaw - angle_rad)
-        if dHd >= np.pi:
-            dHd = 2*np.pi - dHd
-        elif dHd <= -np.pi:
+        if dHd > 2*np.pi:
+            dHd = dHd - 2*np.pi
+        elif dHd < 0:
             dHd = 2*np.pi + dHd
 
         return dHd
@@ -103,4 +103,8 @@ class Task:
         else:
             colChk = False
 
-        return colChk, obstacle_error
+        ob_angle = Task.calc_delta_heading(self, self.ob_pos)
+        # if colChk:
+        #     print(colChk, "\tObstacle:", self.ob_pos, self.state[0:2], self.ob_radius)
+
+        return colChk, obstacle_error, ob_angle

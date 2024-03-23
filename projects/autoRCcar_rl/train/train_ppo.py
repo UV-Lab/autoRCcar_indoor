@@ -1,11 +1,11 @@
 import gym
-import os
+import os, time
 import autoRCcar_gym
 import numpy as np
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import EvalCallback
 
-ver = 'v1'
+ver = 'ppo6'
 # task = 'autoRCcar_straight'
 # task = 'autoRCcar_waypoint'
 task = 'autoRCcar_avoid'
@@ -24,6 +24,6 @@ eval_callback = EvalCallback(eval_env=eval_env, best_model_save_path=ppo_path,
                              n_eval_episodes=10,
                              eval_freq=50000, verbose=1,
                              deterministic=True, render=False)
-model.learn(total_timesteps=4000000, callback=eval_callback)
+model.learn(total_timesteps=20000000, callback=eval_callback)
 ppo_path = os.path.join(final_model)
 model.save(ppo_path)
