@@ -113,8 +113,28 @@ double QuinticPolynomial::CalculateThirdDerivative(double t) const {
     return (6 * x3_) + (24 * x4_ * t) + (60 * x5_ * t * t);
 }
 
-FrenetPath FrenetOptimalPath::Planning(const std::unique_ptr<CubicSplinePath>& global_path,
-                                       const State& current_state) {
+FrenetOptimalPath::FrenetOptimalPath(const Parameters& parameters) : parameters_(parameters) {
+    std::cout << "Frenet_optimal_path parametrs: " << std::endl;
+    std::cout << "max_speed: " << parameters_.max_speed << std::endl;
+    std::cout << "max_accel: " << parameters_.max_accel << std::endl;
+    std::cout << "max_curvature: " << parameters_.max_curvature << std::endl;
+    std::cout << "max_road_width: " << parameters_.max_road_width << std::endl;
+    std::cout << "d_road_width: " << parameters_.d_road_width << std::endl;
+    std::cout << "dt: " << parameters_.dt << std::endl;
+    std::cout << "max_t: " << parameters_.max_t << std::endl;
+    std::cout << "min_t: " << parameters_.min_t << std::endl;
+    std::cout << "target_speed: " << parameters_.target_speed << std::endl;
+    std::cout << "d_target_speed: " << parameters_.d_target_speed << std::endl;
+    std::cout << "n_speed_sample: " << parameters_.n_speed_sample << std::endl;
+    std::cout << "robot_radius: " << parameters_.robot_radius << std::endl;
+    std::cout << "k_j: " << parameters_.k_j << std::endl;
+    std::cout << "k_t: " << parameters_.k_t << std::endl;
+    std::cout << "k_d: " << parameters_.k_d << std::endl;
+    std::cout << "k_lat: " << parameters_.k_lat << std::endl;
+    std::cout << "k_lon: " << parameters_.k_lon << std::endl;
+}
+
+void FrenetOptimalPath::Planning(const std::unique_ptr<CubicSplinePath>& global_path, const State& current_state) {
     FrenetState current_frenet_state = ComputeCurrentFrenetState(global_path, current_state);
     CalculateFrenetPaths(current_frenet_state);
     CalculateGlobalPaths(global_path);
@@ -127,12 +147,10 @@ FrenetPath FrenetOptimalPath::Planning(const std::unique_ptr<CubicSplinePath>& g
             current_frenet_path_ = frenet_paths_.at(i);
         }
     }
-
-    return current_frenet_path_;
 }
 
 FrenetState FrenetOptimalPath::ComputeCurrentFrenetState(const std::unique_ptr<CubicSplinePath>& global_path,
-                                                         const State& current_state) {
+                                                         const State& current_state) const {
     FrenetState current_frenet_state;
     current_frenet_state.speed = current_state.vel.x();
     current_frenet_state.accel = current_state.accel.x();
@@ -236,6 +254,7 @@ void FrenetOptimalPath::CalculateGlobalPaths(const std::unique_ptr<CubicSplinePa
         FrenetPath& fp = frenet_paths_.at(i);
         fp.path.reserve(fp.s.size());
         for (int j = 0; j < static_cast<int>(fp.s.size()); j++) {
+            if (global_path->GetRemainDistance(fp.s.at(j)) < 1.0e-9) break;
             Reference ref = global_path->ReferencePoint(fp.s.at(j));
             double dist = fp.d.at(j);
             Point pos{ref.point.x() + dist * std::cos(ref.heading + M_PI_2),
@@ -299,6 +318,15 @@ void FrenetOptimalPath::CheckPaths() {
 
 void FrenetOptimalPath::CheckCollision() {
     // TODO(luke7637): add collision check algorithm with cost map
+}
+
+bool FrenetOptimalPath::IsPathGenerated() { return current_frenet_path_.path.size() >= 2; }
+
+FrenetPath FrenetOptimalPath::GetCurrentFrenetPath() const {
+    if (current_frenet_path_.path.size() < 2) {
+        return {};
+    }
+    return current_frenet_path_;
 }
 
 }  // namespace frenet_optimal_path

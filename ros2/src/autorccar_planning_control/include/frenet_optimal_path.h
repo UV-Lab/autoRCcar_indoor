@@ -6,8 +6,8 @@
 #include <utility>
 #include <vector>
 
-#include "cubic_spline_path.h"
 #include "common.h"
+#include "cubic_spline_path.h"
 
 namespace autorccar {
 namespace planning_control {
@@ -126,12 +126,15 @@ class FrenetOptimalPath {
     FrenetOptimalPath(FrenetOptimalPath&&) = delete;
     FrenetOptimalPath& operator=(FrenetOptimalPath&&) = delete;
 
-    explicit FrenetOptimalPath() = default;
+    explicit FrenetOptimalPath(const Parameters& parameters);
 
-    FrenetPath Planning(const std::unique_ptr<CubicSplinePath>& global_path, const State& current_state);
+    void Planning(const std::unique_ptr<CubicSplinePath>& global_path, const State& current_state);
+    bool IsPathGenerated();
+    FrenetPath GetCurrentFrenetPath() const;
 
    private:
-    FrenetState ComputeCurrentFrenetState(const std::unique_ptr<CubicSplinePath>& global_path, const State& current_state);
+    FrenetState ComputeCurrentFrenetState(const std::unique_ptr<CubicSplinePath>& global_path,
+                                          const State& current_state) const;
     void CalculateFrenetPaths(const FrenetState& current_state);
     void CalculateGlobalPaths(const std::unique_ptr<CubicSplinePath>& global_path);
     void CheckPaths();

@@ -81,11 +81,12 @@ class CubicSplinePath {
     bool IsPathGenerated();
     void InvalidateCurrentPathIndex();
     Reference ReferencePoint(const Point& position);
-    Reference ReferencePoint(const double distance);
-    double GetRemainDistance(const Point& position);
+    Reference ReferencePoint(const double distance) const;
+    double GetRemainDistance(const Point& position) const;
+    double GetRemainDistance(const double distance) const;
 
    private:
-    std::pair<int, double> FindPathIndexAndDeltaDistance(const Point& position, int current_idx);
+    std::pair<int, double> FindPathIndexAndDeltaDistance(const Point& position, int current_idx) const;
     Path path_;
     CubicSpline2D cubic_spline_path_;
     double total_distance_;

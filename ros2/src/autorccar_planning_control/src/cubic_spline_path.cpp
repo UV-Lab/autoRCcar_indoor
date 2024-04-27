@@ -117,7 +117,8 @@ Point CubicSpline2D::CalculatePosition(double s, int idx) const {
 }
 
 double CubicSpline2D::CalculateHeading(double s, int idx) const {
-    return std::atan2(cubic_spline_y_->CalculateFirstDerivative(s, idx), cubic_spline_x_->CalculateFirstDerivative(s, idx));
+    return std::atan2(cubic_spline_y_->CalculateFirstDerivative(s, idx),
+                      cubic_spline_x_->CalculateFirstDerivative(s, idx));
 }
 
 double CubicSpline2D::CalculateCurvature(double s, int idx) const {
@@ -195,7 +196,7 @@ Reference CubicSplinePath::ReferencePoint(const Point& position) {
     return {closest_point, heading, curvature, distance, remain_distance};
 }
 
-Reference CubicSplinePath::ReferencePoint(const double distance) {
+Reference CubicSplinePath::ReferencePoint(const double distance) const {
     int path_idx = 0;
     if (distance >= total_distance_) {
         path_idx = static_cast<int>(path_.size()) - 1;
@@ -237,7 +238,7 @@ Reference CubicSplinePath::ReferencePoint(const double distance) {
     return {closest_point, heading, curvature, distance, remain_distance};
 }
 
-double CubicSplinePath::GetRemainDistance(const Point& position) {
+double CubicSplinePath::GetRemainDistance(const Point& position) const {
     auto [path_idx, delta_distance] = FindPathIndexAndDeltaDistance(position, current_path_idx_);
 
     if (path_idx == static_cast<int>(path_.size()) - 1) {
@@ -250,7 +251,9 @@ double CubicSplinePath::GetRemainDistance(const Point& position) {
     return total_distance_ - current_distance;
 }
 
-std::pair<int, double> CubicSplinePath::FindPathIndexAndDeltaDistance(const Point& position, int current_idx) {
+double CubicSplinePath::GetRemainDistance(const double distance) const { return total_distance_ - distance; }
+
+std::pair<int, double> CubicSplinePath::FindPathIndexAndDeltaDistance(const Point& position, int current_idx) const {
     if (current_idx == static_cast<int>(path_.size()) - 1) {
         double heading =
             cubic_spline_path_.CalculateHeading(cubic_spline_path_.GetDistance(current_idx), current_idx - 1);

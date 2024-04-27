@@ -11,7 +11,9 @@
 #include "geometry_msgs/msg/twist.hpp"
 #include "geometry_msgs/msg/vector3.hpp"
 #include "hw_control.h"
+#include "nav_msgs/msg/occupancy_grid.hpp"
 #include "nav_msgs/msg/odometry.hpp"
+#include "nav_msgs/msg/path.hpp"
 #include "planning_control.h"
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
@@ -51,13 +53,22 @@ class PlanningControlNode : public rclcpp::Node {
             "rviz/look_ahead_point_marker", rclcpp::SystemDefaultsQoS());
         current_heading_odometry_publisher_ =
             create_publisher<nav_msgs::msg::Odometry>("rviz/current_heading", rclcpp::SystemDefaultsQoS());
+        local_path_marker_publisher_ =
+            create_publisher<nav_msgs::msg::Path>("rviz/local_path", rclcpp::SystemDefaultsQoS());
 
         // subscriber
         auto nav_state_callback = [this](autorccar_interfaces::msg::NavState::UniquePtr msg) {
             this->NavStateCallback(*msg);
         };
-        nav_state_subscriber_ = create_subscription<autorccar_interfaces::msg::NavState>(
-            "nav_topic", rclcpp::SystemDefaultsQoS(), nav_state_callback);
+        nav_state_subscriber_ =
+            create_subscription<autorccar_interfaces::msg::NavState>("nav_topic", 10, nav_state_callback);
+
+        auto occupancy_grid_callback = [this](nav_msgs::msg::OccupancyGrid::UniquePtr msg) {
+            std::cout << "got occupancy grid." << std::endl;
+            this->OccupancyGridCallback(*msg);
+        };
+        occupancy_grid_subscriber_ =
+            create_subscription<nav_msgs::msg::OccupancyGrid>("occupancy_grid/local", 10, occupancy_grid_callback);
 
         auto gcs_command_callback = [this](std_msgs::msg::Int8::UniquePtr msg) { this->GcsCommandCallback(*msg); };
         gcs_command_subscriber_ =
@@ -119,7 +130,10 @@ class PlanningControlNode : public rclcpp::Node {
 
         VisualizeNavState(msg);
         GenerateControlCommand(msg);
+        VisualizeLocalPath(planning_controller_->GetCurrentLocalPath());
     }
+
+    void OccupancyGridCallback(const nav_msgs::msg::OccupancyGrid& /*msg*/) { planning_controller_->PlanOnce(); }
 
     void GenerateControlCommand(const autorccar_interfaces::msg::NavState& msg) const {
         autorccar::planning_control::common::State state;
@@ -316,6 +330,19 @@ class PlanningControlNode : public rclcpp::Node {
         global_path_marker_publisher_->publish(marker_array);
     }
 
+    void VisualizeLocalPath(const std::vector<Point>& local_path) const {
+        nav_msgs::msg::Path path_marker;
+        path_marker.header.set__frame_id("map").set__stamp(now());
+        for (const auto& point : local_path) {
+            geometry_msgs::msg::PoseStamped pose_stamped;
+            pose_stamped.header.set__frame_id("map").set__stamp(path_marker.header.stamp);
+            pose_stamped.pose.position.set__x(point.x()).set__y(point.y()).set__z(0.0);
+            pose_stamped.pose.orientation.set__x(0.0).set__y(0.0).set__z(0.0).set__w(1.0);
+            path_marker.poses.push_back(pose_stamped);
+        }
+        local_path_marker_publisher_->publish(path_marker);
+    }
+
     std::unique_ptr<autorccar::planning_control::planning_control::PlanningControl> planning_controller_;
     autorccar::planning_control::planning_control::Parameters parameters_;
 
@@ -325,9 +352,11 @@ class PlanningControlNode : public rclcpp::Node {
     rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr current_pos_marker_publisher_;
     rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr look_ahead_point_marker_publisher_;
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr current_heading_odometry_publisher_;
+    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr local_path_marker_publisher_;
 
     // subscriber
     rclcpp::Subscription<autorccar_interfaces::msg::NavState>::SharedPtr nav_state_subscriber_;
+    rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr occupancy_grid_subscriber_;
     rclcpp::Subscription<std_msgs::msg::Int8>::SharedPtr gcs_command_subscriber_;
     rclcpp::Subscription<autorccar_interfaces::msg::Path>::SharedPtr global_path_subscriber_;
 
