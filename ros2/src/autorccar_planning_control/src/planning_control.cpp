@@ -32,18 +32,18 @@ PlanningControl::PlanningControl(const Parameters& parameters)
     std::cout << "decel: " << parameters_.control.decel << std::endl;
     std::cout << "control_dt: " << parameters_.control.control_dt << std::endl;
     std::cout << "look_ahead_distance: " << parameters_.control.pure_pursuit.look_ahead_distance << std::endl;
-    std::cout << "look_ahead_distance: " << parameters_.control.pure_pursuit.min_look_ahead_distance << std::endl;
+    std::cout << "min_look_ahead_distance: " << parameters_.control.pure_pursuit.min_look_ahead_distance << std::endl;
 
     parameters_.frenet.target_speed = parameters_.target_speed;
-    frenet_optimal_path_ = std::make_unique<FrenetOptimalPath>();
+    frenet_optimal_path_ = std::make_unique<FrenetOptimalPath>(parameters_.frenet);
 }
 
 void PlanningControl::SetGlobalPath(std::vector<Point>&& global_path, std::vector<double>&& /*speeds*/) {
     goal_ = global_path.back();
-    cubic_spline_path_.reset();
+    global_path_.reset();
     got_global_path_ = false;
-    cubic_spline_path_ = std::make_unique<CubicSplinePath>(std::move(global_path));
-    got_global_path_ = cubic_spline_path_->IsPathGenerated();
+    global_path_ = std::make_unique<CubicSplinePath>(std::move(global_path));
+    got_global_path_ = global_path_->IsPathGenerated();
 }
 
 void PlanningControl::SetDriveCommand(const DriveCommand& drive_command) { drive_command_ = drive_command; }
@@ -52,9 +52,7 @@ void PlanningControl::SetCurrentTargetSpeed(const double speed) { current_target
 
 void PlanningControl::SetCurrentState(const State& state) { current_state_ = state; }
 
-void PlanningControl::PlanOnce() {
-    current_frenet_path_ = frenet_optimal_path_->Planning(cubic_spline_path_, current_state_);
-}
+void PlanningControl::PlanOnce() { frenet_optimal_path_->Planning(global_path_, current_state_); }
 
 bool PlanningControl::GoalReached(const State& state) const {
     Point current_pos(state.pos.x(), state.pos.y());
@@ -79,9 +77,22 @@ ControlCommand PlanningControl::GenerateMotionCommand() {
         return {0.0, 0.0};
     }
 
-    // TODO(luke7637): using current_frenet_path_ as local path.
+    current_frenet_path_ = frenet_optimal_path_->GetCurrentFrenetPath();
+    if (!frenet_optimal_path_->IsPathGenerated()) {
+        std::cout << "frenet optimal path is not generated." << std::endl;
+        return {0.0, 0.0};
+    }
+    Path local_trajectory = current_frenet_path_.path;
+    local_path_.reset();
+    local_path_ = std::make_unique<CubicSplinePath>(std::move(local_trajectory));
 
-    double speed = CalcSpeedCommand(current_state_, parameters_.target_speed);
+    if (!local_path_->IsPathGenerated()) {
+        std::cout << "local path is not generated." << std::endl;
+        return {0.0, 0.0};
+    }
+
+    double target_speed = current_frenet_path_.d_s.at(1);
+    double speed = CalcSpeedCommand(current_state_, target_speed);
 
     if (speed == 0.0) return {0.0, 0.0};
 
@@ -97,9 +108,11 @@ ControlCommand PlanningControl::GenerateMotionCommand() {
 
 Point PlanningControl::GetLookAheadPoint() { return look_ahead_point_; }
 
+Path PlanningControl::GetCurrentLocalPath() { return current_frenet_path_.path; }
+
 double PlanningControl::CalcSpeedCommand(const State& state, const double target_speed) {
     Point position(state.pos.x(), state.pos.y());
-    double remain_distance = cubic_spline_path_->GetRemainDistance(position);
+    double remain_distance = local_path_->GetRemainDistance(position);
     double stop_distance = (target_speed * target_speed) / (2 * parameters_.control.decel);
 
     if (remain_distance < stop_distance) {
@@ -133,11 +146,11 @@ std::pair<bool, double> PlanningControl::CalculateSteeringCommand(const State& s
 
 bool PlanningControl::FindLookAheadPoint(const State& state) {
     Point position(state.pos.x(), state.pos.y());
-    Reference reference = cubic_spline_path_->ReferencePoint(position);
+    Reference reference = local_path_->ReferencePoint(position);
 
     Point ahead_point = reference.point + Point(cos(reference.heading), sin(reference.heading)) *
                                               parameters_.control.pure_pursuit.look_ahead_distance;
-    Reference reference_ahead_point = cubic_spline_path_->ReferencePoint(ahead_point);
+    Reference reference_ahead_point = local_path_->ReferencePoint(ahead_point);
     look_ahead_point_ = reference_ahead_point.point;
     return true;
 }

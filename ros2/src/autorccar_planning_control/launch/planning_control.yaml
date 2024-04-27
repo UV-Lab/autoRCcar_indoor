@@ -12,9 +12,9 @@
       accel: 0.5 # [m/s^2]
       decel: 0.5 # [m/s^2]
       pure_pursuiter:
-        look_ahead_distance: 1.0 # [m]
+        look_ahead_distance: 2.0 # [m]
 
-    frenet_opitmal:
+    frenet_optimal:
       max_speed: 4.0 # [m/s]
       max_accel: 2.0 # [m/ss]
       max_curvature: 5.0 # [1/m]

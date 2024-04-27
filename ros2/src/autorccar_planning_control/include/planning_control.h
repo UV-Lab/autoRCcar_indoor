@@ -61,6 +61,7 @@ class PlanningControl {
     void PlanOnce();
     ControlCommand GenerateMotionCommand();
     Point GetLookAheadPoint();
+    Path GetCurrentLocalPath();
 
    private:
     double CalcSpeedCommand(const State& state, double target_speed);
@@ -80,7 +81,8 @@ class PlanningControl {
     Point look_ahead_point_{0.0, 0.0};
     bool got_global_path_ = false;
     State current_state_;
-    std::unique_ptr<CubicSplinePath> cubic_spline_path_;
+    std::unique_ptr<CubicSplinePath> global_path_;
+    std::unique_ptr<CubicSplinePath> local_path_;
     std::unique_ptr<FrenetOptimalPath> frenet_optimal_path_;
     FrenetPath current_frenet_path_{};
 };

@@ -90,7 +90,7 @@ Visualization Manager:
       Enabled: true
       Name: current_position
       Namespaces:
-        current_pos: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -103,7 +103,7 @@ Visualization Manager:
       Enabled: true
       Name: look_ahead_point
       Namespaces:
-        current_pos: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -116,14 +116,41 @@ Visualization Manager:
       Enabled: true
       Name: global_path
       Namespaces:
-        global_path_edge: true
-        global_path_node: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /rviz/global_path_marker
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz_default_plugins/Path
+      Color: 25; 255; 0
+      Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Billboards
+      Line Width: 0.05000000074505806
+      Name: local_path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /rviz/local_path
       Value: true
   Enabled: true
   Global Options:
@@ -180,11 +207,11 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 19.972436904907227
+      Scale: 10
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz_default_plugins)
-      X: 3.3045547008514404
-      Y: 2.203036308288574
+      X: 0
+      Y: 0
     Saved: ~
 Window Geometry:
   Displays:
@@ -202,5 +229,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1200
-  X: 3202
-  Y: 237
+  X: 387
+  Y: 106
