@@ -1,22 +1,19 @@
-# autoRCcar Reinforcement Learning
-### Environment
-- autoRCcar_straight
-- autoRCcar_waypoint
+# Reinforcement Learning
+### Task
+- 'avoid-v0'
   
 ### Dependencies
-    pip install requriments.txt
     pip install -e .
     
 ### Train
-    python train.py
+    python train_model.py ppo1
+    python train_model.py tqc1
 
     tensorboard --logdir=log
     http://localhost:6006/
 
 ### Run
-    python run_model.py <model_name>
-    ex) python run_model.py best_waypoint_v1
-
-    python eval_model.py <model_name>
+    python run_model.py best_avoid-v0_ppo1
+    python run_model.py avoid-v0_tqc1
     
 
