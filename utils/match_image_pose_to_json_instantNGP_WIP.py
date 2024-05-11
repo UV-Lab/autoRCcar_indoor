@@ -6,48 +6,6 @@ import pandas
 import cv2
 import json
 from scipy.spatial.transform import Rotation as R
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-
-
-# def plot_cameras(extrinsic_matrices):
-#     """
-#     Visualizes the extrinsics of multiple cameras in 3D space.
-
-#     Parameters:
-#     - extrinsic_matrices (numpy.ndarray): Array of camera extrinsics matrices (Nx4x4).
-#     https://stackoverflow.com/questions/8178467/how-to-plot-the-camera-and-image-positions-from-camera-calibration-data
-#     """
-#     ax = plt.figure().add_subplot(projection="3d")
-
-#     for camera_extrinsics in extrinsic_matrices:
-#         # Extract translation and rotation from camera extrinsics matrix
-#         translation = camera_extrinsics[:3, 3]
-#         rotation_matrix = camera_extrinsics[:3, :3]
-
-#         # Plot camera position
-#         ax.scatter(*translation, marker="o")
-
-#         # Plot camera orientation axes
-#         origin = translation
-#         for i in range(3):
-#             axis_direction = rotation_matrix[:, i]
-#             if i == 0:
-#                 ax.quiver(*origin, *axis_direction, length=0.5, normalize=True)
-#             else:
-#                 ax.quiver(*origin, *axis_direction, length=1, normalize=True)
-#         # Plot camera direction
-#         z = -1 * rotation_matrix[:, 2]
-#         ax.quiver(*origin, *z, length=1, normalize=True, color="r", alpha=0.5)
-
-#     ax.set_xlabel("X")
-#     ax.set_ylabel("Y")
-#     ax.set_zlabel("Z")
-#     ax.set_title("Multiple Cameras Extrinsics Visualization")
-
-#     ax.set_zlim(-2, 2)
-
-#     plt.show()
 
 
 def pose_quat_to_se3(pos, quat):
@@ -104,13 +62,41 @@ def calc_sharpness(imagePath):
     return fm
 
 
+def to_rotmat(a, b):
+    a, b = a / np.linalg.norm(a), b / np.linalg.norm(b)
+    v = np.cross(a, b)
+    c = np.dot(a, b)
+    # handle exception for the opposite direction input
+    if c < -1 + 1e-10:
+        return to_rotmat(a + np.random.uniform(-1e-2, 1e-2, 3), b)
+    s = np.linalg.norm(v)
+    kmat = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
+    return np.eye(3) + kmat + kmat.dot(kmat) * ((1 - c) / (s**2 + 1e-10))
+
+
+def closest_point_2_lines(
+    oa, da, ob, db
+):  # returns point closest to both rays of form o+t*d, and a weight factor that goes to 0 if the lines are parallel
+    da = da / np.linalg.norm(da)
+    db = db / np.linalg.norm(db)
+    c = np.cross(da, db)
+    denom = np.linalg.norm(c) ** 2
+    t = ob - oa
+    ta = np.linalg.det([t, db, c]) / (denom + 1e-10)
+    tb = np.linalg.det([t, da, c]) / (denom + 1e-10)
+    if ta > 0:
+        ta = 0
+    if tb > 0:
+        tb = 0
+    return (oa + ta * da + ob + tb * db) * 0.5, denom
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Open pose csv file and match images and poses, then make transformation.json file."
     )
     parser.add_argument(
         "--base_path",
-        "-b",
         required=True,
         help="Path to the base dataset folder. Base folder should have images folder.",
     )
@@ -137,6 +123,10 @@ if __name__ == "__main__":
     if not os.path.isfile(calib_yaml):
         raise FileNotFoundError(f"Calibration file '{calib_yaml}' does not exist.")
 
+    # output_dir = args.output_dir or os.path.join(
+    #     os.path.dirname(os.path.abspath(bag_file))
+    # )
+
     images_path = args.image_folder or os.path.join(base_path, "images")
     if not os.path.isdir(images_path):
         raise FileNotFoundError(f"Image folder '{images_path}' does not exist.")
@@ -149,46 +139,17 @@ if __name__ == "__main__":
 
     transformations = []
 
+    print("Find closest pose for each image...")
     csv_reads = pandas.read_csv(poses_csv)
     csv_index = 0
     num_missed = 0
-    sampling_rate = 1
-
-    # Plot original poses
-    translations = np.empty((0, 3))
-    eulers = np.empty((0, 3))
-    for row in csv_reads.itertuples():
-        pos = np.array([row.pos_x, row.pos_y, row.pos_z])
-        translations = np.vstack([translations, pos])
-        quat = np.array([row.quat_x, row.quat_y, row.quat_z, row.quat_w])
-        # euler = R.from_quat(quat).as_euler("xyz", degrees=True)
-        rot = R.from_quat(quat).as_matrix()
-        euler = R.from_matrix(rot).as_euler("xyz", degrees=True)
-        eulers = np.vstack([eulers, euler])
-    plt.figure()
-    plt.title("Translations")
-    plt.subplot(3, 1, 1)
-    plt.plot(translations[:, 0])
-    plt.subplot(3, 1, 2)
-    plt.plot(translations[:, 1])
-    plt.subplot(3, 1, 3)
-    plt.plot(translations[:, 2])
-
-    plt.figure()
-    plt.title("Eulrs")
-    plt.subplot(3, 1, 1)
-    plt.plot(eulers[:, 0])
-    plt.subplot(3, 1, 2)
-    plt.plot(eulers[:, 1])
-    plt.subplot(3, 1, 3)
-    plt.plot(eulers[:, 2])
-
-    translations = np.empty((0, 3))
-    eulers = np.empty((0, 3))
-    print("Find closest pose for each image...")
+    sampling_rate = 5
     for i, image_time in enumerate(image_times):
         if i % sampling_rate != 0:
             continue
+
+        if i > 500:
+            break
 
         is_found, csv_index = find_closest_time(
             image_time, csv_reads["timestamp"], csv_index
@@ -204,41 +165,13 @@ if __name__ == "__main__":
         ].to_numpy()
 
         se3 = pose_quat_to_se3(pos, quat)
-        se3_w2w_prime = np.array([[0, -1, 0], [0, 0, -1], [1, 0, 0]])
-        se3[0:3, 0:3] = se3_w2w_prime @ se3[0:3, 0:3]
-        se3[0:3, 3] = se3_w2w_prime @ se3[0:3, 3]
-
-        # for plotting
-        translations = np.vstack([translations, se3[0:3, 3]])
-        eulers = np.vstack(
-            [eulers, R.from_matrix(se3[0:3, 0:3]).as_euler("zxy", degrees=True)]
-        )
 
         transformations.append(
             {
                 "timestamp": image_time,  # Include timestamp if needed for other uses
-                "transform_matrix": se3.tolist(),  # Convert numpy array to list for JSON serialization
+                "transform_matrix": se3,
             }
         )
-
-    plt.figure()
-    plt.subplot(3, 1, 1)
-    plt.plot(translations[:, 0])
-    plt.subplot(3, 1, 2)
-    plt.plot(translations[:, 1])
-    plt.subplot(3, 1, 3)
-    plt.plot(translations[:, 2])
-
-    plt.figure()
-    plt.title("Eulrs")
-    plt.subplot(3, 1, 1)
-    plt.plot(eulers[:, 0])
-    plt.subplot(3, 1, 2)
-    plt.plot(eulers[:, 1])
-    plt.subplot(3, 1, 3)
-    plt.plot(eulers[:, 2])
-
-    plt.show()
 
     # if not os.path.exists(output_dir):
     #     raise FileNotFoundError(f"Output directory '{output_dir}' does not exist.")
@@ -275,14 +208,62 @@ if __name__ == "__main__":
         "p2": distortion_coeffs["data"][3],
         "cx": camera_matrix["data"][2],
         "cy": camera_matrix["data"][5],
-        "w": yaml_data["image_width"],  # Replace with actual width
-        "h": yaml_data["image_height"],  # Replace with actual height
+        "w": 1920,  # Replace with actual width
+        "h": 1080,  # Replace with actual height
         "aabb_scale": 32,
     }
+
+    up = np.zeros(3)
+    for transformation in transformations:
+        se3 = transformation["transform_matrix"]
+        se3[0:3, 2] *= -1  # flip the y and z axis
+        se3[0:3, 1] *= -1
+        se3 = se3[[1, 0, 2, 3], :]
+        se3[2, :] *= -1  # flip whole world upside down
+        up += se3[0:3, 1]
+        transformation["transform_matrix"] = se3
+
+    up = up / np.linalg.norm(up)
+    print("up vector was", up)
+    rot = to_rotmat(up, [0, 0, 1])  # rotate up vector to [0,0,1]
+    rot = np.pad(rot, [0, 1])
+    rot[-1, -1] = 1
+
+    for transformation in transformations:
+        transformation["transform_matrix"] = np.matmul(
+            rot, transformation["transform_matrix"]
+        )  # rotate up to be the z axis
+
+    totw = 0.0
+    totp = np.array([0.0, 0.0, 0.0])
+    for f in transformations:
+        mf = f["transform_matrix"][0:3, :]
+        for g in transformations:
+            mg = g["transform_matrix"][0:3, :]
+            p, w = closest_point_2_lines(mf[:, 3], mf[:, 2], mg[:, 3], mg[:, 2])
+            if w > 0.00001:
+                totp += p * w
+                totw += w
+    if totw > 0.0:
+        totp /= totw
+    print(totp)  # the cameras are looking at totp
+
+    for f in transformations:
+        f["transform_matrix"][0:3, 3] -= totp
+
+    avglen = 0.0
+    for f in transformations:
+        avglen += np.linalg.norm(f["transform_matrix"][0:3, 3])
+    avglen /= len(transformations)
+    print("avg camera distance from origin", avglen)
+    for f in transformations:
+        f["transform_matrix"][0:3, 3] *= 4.0 / avglen  # scale to "nerf sized"
+        f["transform_matrix"] = f["transform_matrix"].tolist()
 
     print("Adding frame data...")
     json_data["frames"] = []
     for i, transformation in enumerate(transformations):
+
         file_path = os.path.join("images", str(transformation["timestamp"]) + ".png")
         frame = {
             # "file_path": "images/" + str(transformation["timestamp"]) + ".png",
@@ -291,7 +272,7 @@ if __name__ == "__main__":
             "transform_matrix": transformation["transform_matrix"],
         }
         json_data["frames"].append(frame)
-        print("Progress {} / {}".format(i + 1, len(transformations)), end="\r")
+        print("Progress {} / {}".format(i, len(transformations)), end="\r")
 
     print("\n")
     with open(os.path.join(base_path, "transforms.json"), "w") as outfile:
