@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import os
 
 import gymnasium as gym
 from gymnasium import spaces
@@ -15,6 +16,11 @@ class autoRCcarEnv(gym.Env):
         self.map_size = 15  # [m] total_size = map_size *2
         self.steps_cnt = 0 
         self.max_step = 500
+
+        ## Waypoint
+        self.vehicle_heading = None
+        self.wp_end = 0
+        self.wp_now = 0
         
         ## Goal
         self.goal = {}
@@ -81,8 +87,8 @@ class autoRCcarEnv(gym.Env):
         if not collision:
             goal = Task.is_goal(self)
         terminated = bool(
-            np.abs(current_pos[0]) >= self.map_size
-            or np.abs(current_pos[1]) >= self.map_size
+            np.abs(current_pos[0]-self.init_pos[0]) >= self.map_size
+            or np.abs(current_pos[1]-self.init_pos[1]) >= self.map_size
             or self.steps_cnt == self.max_step
             or collision
         )
@@ -121,32 +127,36 @@ class autoRCcarEnv(gym.Env):
         return observation, reward, terminated, False, info
 
 
-    def reset(self, seed=None, options=None):  # New episode
+    def reset(self, seed=None, options=None, set_continue=None, set_goal=None):  # New episode
         super().reset(seed=seed)
 
         self.steps_cnt = 0 
-        self.goal_flag = False
+        self.goal_flag = False    
 
         ## Initialize vehicle's state [x, y, yaw. yaw_rate, speed]
-        random_heading_deg = random.randint(0, 359)  # 0 ~ 359 사이 1deg 간격 무작위 추출
-        init_head_rad = np.radians(random_heading_deg)
-        self.state = np.array([self.init_pos[0], self.init_pos[1], init_head_rad, 0, self.speed_bound[0]], dtype=np.float32)
-        
+        if set_continue is None:
+            random_heading_deg = random.randint(0, 359)  # 0 ~ 359 사이 1deg 간격 무작위 추출
+            init_head_rad = np.radians(random_heading_deg)
+            self.state = np.array([self.init_pos[0], self.init_pos[1], init_head_rad, 0, self.speed_bound[0]], dtype=np.float32)
+        else:
+            self.init_pos = [self.state[0], self.state[1]]
+            self.state = self.state
+
         ## Initialize map
-        tmpGoal, tmpOb = Task.generate_map(self)
+        tmpGoal, tmpOb = Task.generate_map(self, set_goal)
         self.goal['position'] = [tmpGoal[0], tmpGoal[1]]
         self.goal['radius'] = self.goal_radius
 
-        goal_err_x = self.goal['position'][0] - self.init_pos[0]
-        goal_err_y = self.goal['position'][1] - self.init_pos[1]
+        goal_err_x = self.goal['position'][0] - self.state[0]
+        goal_err_y = self.goal['position'][1] - self.state[1]
         goal_del_angle = Task.calc_delta_angle(self.init_pos, self.goal['position'], self.state[2])
         self.goal['delta_angle'] = np.degrees(goal_del_angle)
 
-        self.obstacle['position'] = [tmpOb[0], tmpOb[1]]
+        self.obstacle['position'] = [tmpOb[0]+self.state[0], tmpOb[1]+self.state[1]]
         self.obstacle['radius'] = tmpOb[2]
-        ob_err_x = self.obstacle['position'][0] - self.init_pos[0]
-        ob_err_y = self.obstacle['position'][1] - self.init_pos[1]
-        ob_del_angle = Task.calc_delta_angle(self.init_pos, self.obstacle['position'], self.state[2])
+        ob_err_x = self.obstacle['position'][0] - self.state[0]
+        ob_err_y = self.obstacle['position'][1] - self.state[1]
+        ob_del_angle = Task.calc_delta_angle(self.state, self.obstacle['position'], self.state[2])
         self.obstacle['delta_angle'] = np.degrees(ob_del_angle)
 
         ## Initialize observation

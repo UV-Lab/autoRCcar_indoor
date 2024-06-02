@@ -4,14 +4,20 @@ import random
 
 class Task:
 
-    def generate_map(self):
+    def generate_map(self, set_goal):
+        
         ## goal point
-        rand_x = int(random.choice(['1', '-1']))*random.randint(7, 9)
-        rand_y = int(random.choice(['1', '-1']))*random.randint(7, 9)
+        if set_goal is None:
+            rand_x = int(random.choice(['1', '-1']))*random.randint(7, 9)
+            rand_y = int(random.choice(['1', '-1']))*random.randint(7, 9)
+        else:
+            rand_x = set_goal[0]
+            rand_y = set_goal[1]
+
         dist = np.sqrt(rand_x*rand_x + rand_y*rand_y)
 
-        goal_err_x = rand_x - self.init_pos[0]
-        goal_err_y = rand_y - self.init_pos[1]        
+        goal_err_x = rand_x - self.state[0]
+        goal_err_y = rand_y - self.state[1]
 
         ## obstacle
         ob_x = goal_err_x/2 + random.randint(-5,5)*0.1
