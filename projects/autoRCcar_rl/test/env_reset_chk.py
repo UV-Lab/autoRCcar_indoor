@@ -3,7 +3,7 @@ import gymnasium as gym
 import matplotlib.pyplot as plt
 import numpy as np
 
-env = gym.make("avoid-v0")
+env = gym.make("avoid-v1")
 observation, info = env.reset()
 
 print(info['task'])

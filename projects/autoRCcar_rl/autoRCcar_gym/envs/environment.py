@@ -11,7 +11,7 @@ from autoRCcar_gym.envs.task import Task
 class autoRCcarEnv(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 50}
     
-    def __init__(self, render_mode=None):
+    def __init__(self, render_mode = None):
         self.task = 'avoid-v0'
         self.map_size = 15  # [m] total_size = map_size *2
         self.steps_cnt = 0 
@@ -132,7 +132,7 @@ class autoRCcarEnv(gym.Env):
 
         self.steps_cnt = 0 
         self.goal_flag = False    
-
+        
         ## Initialize vehicle's state [x, y, yaw. yaw_rate, speed]
         if set_continue is None:
             random_heading_deg = random.randint(0, 359)  # 0 ~ 359 사이 1deg 간격 무작위 추출
@@ -142,8 +142,13 @@ class autoRCcarEnv(gym.Env):
             self.init_pos = [self.state[0], self.state[1]]
             self.state = self.state
 
-        ## Initialize map
-        tmpGoal, tmpOb = Task.generate_map(self, set_goal)
+        if self.task == 'avoid-v0':
+            ## Initialize map
+            tmpGoal, tmpOb = Task.generate_map(self, set_goal)
+        elif self.task == 'avoid-v1':
+            ## Initialize map
+            tmpGoal, tmpOb = Task.generate_general_map(self, set_goal)
+
         self.goal['position'] = [tmpGoal[0], tmpGoal[1]]
         self.goal['radius'] = self.goal_radius
 
@@ -158,6 +163,10 @@ class autoRCcarEnv(gym.Env):
         ob_err_y = self.obstacle['position'][1] - self.state[1]
         ob_del_angle = Task.calc_delta_angle(self.state, self.obstacle['position'], self.state[2])
         self.obstacle['delta_angle'] = np.degrees(ob_del_angle)
+
+        if tmpOb[0]==0 and tmpOb[1]==0 and tmpOb[2]==0:
+            ob_del_angle = 0
+            self.obstacle['delta_angle'] = np.degrees(ob_del_angle)
 
         ## Initialize observation
         observation = np.array([np.abs(goal_err_x), np.abs(goal_err_y), goal_del_angle, \
@@ -179,3 +188,50 @@ class autoRCcarEnv(gym.Env):
     def render(self):
         ## TBD
         pass
+
+
+class autoRCcarEnv_rev(autoRCcarEnv):
+
+    def __init__(self, render_mode = None):
+        self.task = 'avoid-v1'
+        self.map_size = 15  # [m] total_size = map_size *2
+        self.steps_cnt = 0 
+        self.max_step = 500
+
+        ## Waypoint
+        self.vehicle_heading = None
+        self.wp_end = 0
+        self.wp_now = 0
+        
+        ## Goal
+        self.goal = {}
+        self.goal_radius = 0.3
+        self.goal_flag = False
+
+        ## Obstacle
+        self.obstacle = {}
+        
+        ## Vehicle
+        self.state = None
+        self.state_before = None
+        self.simulation_hz = 10.0      # [Hz]
+        self.wheelbase = 0.3           # [m]
+        self.steering_bound = [-np.radians(45.0), np.radians(45.0)]  # [deg->rad]
+        self.speed_bound = [0.0, 3.0]  # [m/s]
+        self.init_pos = [0, 0]         # [m]
+        
+        self.obs_before = None
+
+        ## Action space [steering, speed]
+        act_low_bound = np.array([self.steering_bound[0], self.speed_bound[0]], dtype=np.float32)
+        act_high_bound = np.array([self.steering_bound[1], self.speed_bound[1]], dtype=np.float32)
+        self.action_space = spaces.Box(act_low_bound, act_high_bound, dtype=np.float32) 
+
+        ## Observation space 
+        obs_low_bound = np.array([0, 0, 0, \
+                                  0, 0, 0, 0, \
+                                  0, self.speed_bound[0]], dtype=np.float32)
+        obs_high_bound = np.array([self.map_size, self.map_size, np.pi, \
+                                   self.map_size, self.map_size, np.pi, 5, \
+                                   2*np.pi, self.speed_bound[1]], dtype=np.float32) 
+        self.observation_space = spaces.Box(obs_low_bound, obs_high_bound, dtype=np.float32)

@@ -9,7 +9,7 @@ from stable_baselines3.common.callbacks import EvalCallback
 suffix = sys.argv[1]  # ex) ppo1, tqc2
 
 num_eval = 10
-task = 'avoid-v0'
+task = 'avoid-v1'
 
 env = gym.make(task)
 best_model = 'model/best_' + task + '_' + suffix
@@ -62,6 +62,6 @@ elif 'tqc' in suffix:
                                 n_eval_episodes=num_eval, eval_freq=100000, verbose=1,
                                 deterministic=True, render=False)
 
-model.learn(total_timesteps=6000000, callback=eval_callback)
+model.learn(total_timesteps=10000000, callback=eval_callback)
 final_model_path = os.path.join(final_model)
 model.save(final_model_path)
