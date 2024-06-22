@@ -3,7 +3,7 @@ import gymnasium as gym
 import matplotlib.pyplot as plt
 import numpy as np
 
-env = gym.make("avoid-v0")
+env = gym.make("avoid-v1")
 observation, info = env.reset()
 
 print(info['task'])
@@ -40,31 +40,4 @@ plt.axis('equal')
 plt.legend(loc='best')
 plt.grid(True)
 
-
-total_reward = 0
-for idx in range(1000):
-    action = env.action_space.sample()
-    observation, reward, terminated, truncated, info = env.step(action)
-
-    print(idx, '|Action :', end=' ')
-    for act in action:
-        print(round(act,4), end=' ')
-    print('\t| Obs :', end=' ')
-    for obs in observation:
-        print(round(obs,4), end=' ')
-    print('\t| Reward :', reward)
-    
-    total_reward += reward
-
-    plt.scatter(info['state'][0], info['state'][1], color='b', s=10, label='vehicle')
-    if terminated or truncated:
-        break
-
-
-env.close()
-
-
-print(f'{idx} th, Reward : {total_reward}')
-print(info['done'])
 plt.show()
-
