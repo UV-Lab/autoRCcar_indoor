@@ -15,8 +15,6 @@ namespace autorccar {
 namespace planning_control {
 namespace planning_control {
 
-enum class DriveCommand { kStop = 0, kStart };
-
 // Aliases for convenience.
 using Point = Eigen::Vector2d;
 using common::ControlCommand;
@@ -55,7 +53,6 @@ class PlanningControl {
     explicit PlanningControl(const Parameters& parameters);
 
     void SetGlobalPath(std::vector<Point>&& global_path, std::vector<double>&& speeds);
-    void SetDriveCommand(const DriveCommand& drive_command);
     void SetCurrentTargetSpeed(const double speed);
     void SetCurrentState(const State& state);
     void PlanOnce();
@@ -70,12 +67,10 @@ class PlanningControl {
     double CalcSteeringAngle(double deviation_angle) const;
     bool FindLookAheadPoint(const State& state);
     bool GoalReached(const State& state) const;
-    bool GotStartCommand() const;
 
     Parameters parameters_;
     double look_ahead_distance_squared_ = 0.0;
     double goal_reach_threshold_squared_ = 0.0;
-    DriveCommand drive_command_ = DriveCommand::kStop;
     double current_target_speed_ = 0.0;
     Point goal_;
     Point look_ahead_point_{0.0, 0.0};

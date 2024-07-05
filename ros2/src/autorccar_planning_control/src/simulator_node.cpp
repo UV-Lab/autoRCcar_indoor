@@ -42,7 +42,9 @@ class SimulatorNode : public rclcpp::Node {
             this->ControlCommandCallback(*msg);
         };
         control_command_subscriber_ = create_subscription<autorccar_interfaces::msg::ControlCommand>(
-            "planning_control/control_command", rclcpp::SystemDefaultsQoS(), control_command_callback);
+            "planning_control/control_command",
+            rclcpp::SystemDefaultsQoS().deadline(std::chrono::milliseconds(control_command_deadline_)),
+            control_command_callback);
 
         auto initialpose_callback = [this](geometry_msgs::msg::PoseWithCovarianceStamped::UniquePtr msg) {
             this->InitialposeCallback(*msg);
@@ -119,9 +121,10 @@ class SimulatorNode : public rclcpp::Node {
     rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr initialpose_subscriber_;
 
     // variables
-    bool is_initialized_ = false;
-    int sim_hz_ = 500;
-    int nav_pub_hz_ = 100;
+    bool is_initialized_{false};
+    int sim_hz_{500};
+    int nav_pub_hz_{100};
+    int control_command_deadline_{1000};
 };
 
 int main(int argc, char** argv) {

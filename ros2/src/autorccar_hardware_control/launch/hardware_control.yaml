@@ -1,0 +1,11 @@
+/**:
+  ros__parameters:
+    rccar_config:
+      wheelbase: 0.3 # [m]
+      max_speed: 1.0 # [m/s]
+      max_steering_angle: 0.7854 # [rad]
+
+    hardware_control:
+      serial_port_name: "/dev/ttyUSB0"
+      serial_baudrate: 115200
+      control_command_deadline: 100 # [msec]

@@ -1,4 +1,5 @@
 """Planning Control launcher for Auto RC Car."""
+
 import os
 
 from ament_index_python.packages import get_package_share_directory
@@ -12,11 +13,19 @@ def generate_launch_description():
         "launch",
         "planning_control.yaml",
     )
+    hardware_control_config_file_path = os.path.join(
+        get_package_share_directory("autorccar_hardware_control"),
+        "launch",
+        "hardware_control.yaml",
+    )
     planning_control_node = Node(
         package="autorccar_planning_control",
         executable="planning_control_node",
         name="planning_control",
-        parameters=[planning_control_config_file_path],
+        parameters=[
+            planning_control_config_file_path,
+            hardware_control_config_file_path,
+        ],
         output="screen",
     )
     ld = LaunchDescription()
