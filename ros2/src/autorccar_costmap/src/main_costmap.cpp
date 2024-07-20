@@ -4,6 +4,7 @@
 #include <string>
 
 #include "costmap.h"
+#include "costmap_config_manager.h"
 #include "costmap_ros_wrapper.h"
 #include "rclcpp/rclcpp.hpp"
 
@@ -12,9 +13,11 @@ int main(int argc, char* argv[]) {
 
     std::string config = argv[1];
 
-    Costmap occupancy_grid(config);
+    ConfigManager config_manager(config);
 
-    auto node = std::make_shared<CostmapWrapper>(&occupancy_grid);
+    Costmap occupancy_grid(&config_manager);
+
+    auto node = std::make_shared<CostmapWrapper>(&occupancy_grid, &config_manager);
     rclcpp::spin(node);
 
     rclcpp::shutdown();

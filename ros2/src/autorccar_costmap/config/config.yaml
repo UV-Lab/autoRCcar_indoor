@@ -1,9 +1,18 @@
 global:
+  publish: true        # publish topic
   width: 50            # map width [m] 
   height: 50           # map height [m] 
   resolution: 0.05     # resolution [m/cell] 
-  updateEveryNthLidar: 2  # update costmap every Nth lidar (= lidar frequency / costmap update frequency)
+  update_every_Nth_lidar: 2  # update costmap every Nth lidar (= lidar frequency / costmap update frequency)
 
 local:
+  publish: true        # publish topic
   width: 5             # map width [m]
   height: 5            # map height [m]
+
+object_detection:
+  publish: true
+  visualize: true      # show marker on rviz
+  dbscan:
+    eps: 0.6
+    min_samples: 10

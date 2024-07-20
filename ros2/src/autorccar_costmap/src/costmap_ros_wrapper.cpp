@@ -3,7 +3,8 @@
 #include "costmap.h"
 #include "rclcpp/rclcpp.hpp"
 
-CostmapWrapper::CostmapWrapper(Costmap* pCostmap) : Node("costmap"), mpCostmap_(pCostmap) {
+CostmapWrapper::CostmapWrapper(Costmap* costmap, ConfigManager* config_manager)
+    : Node("costmap"), mpCostmap_(costmap), mpConfig_(config_manager) {
     point_cloud_subscriber_ = this->create_subscription<livox_ros_driver2::msg::CustomMsg>(
         "livox/lidar", 10, std::bind(&CostmapWrapper::PointCloudCallback, this, std::placeholders::_1));
 
@@ -16,6 +17,16 @@ CostmapWrapper::CostmapWrapper(Costmap* pCostmap) : Node("costmap"), mpCostmap_(
     global_occupancy_grid_publisher_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("occupancy_grid", 10);
 
     local_occupancy_grid_publisher_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("occupancy_grid/local", 10);
+
+    bounding_box_publisher_ = this->create_publisher<autorccar_interfaces::msg::BoundingBoxes>("bounding_boxes", 10);
+
+    bounding_box_visual_marker_publisher_ =
+        this->create_publisher<visualization_msgs::msg::MarkerArray>("bounding_boxes/visual_marker", 10);
+
+    publish_global_costmap_ = mpConfig_->getPublishGlobalCostmap();
+    publish_local_costmap_ = mpConfig_->getPublishLocalCostmap();
+    publish_bounding_box_ = mpConfig_->getPublishObjectDetection();
+    show_marker_ = mpConfig_->getVisualizeObjectDetection();
 
     // Initialization
     point_cloud_in_.reset(new pcl::PointCloud<pcl::PointXYZI>());
@@ -45,8 +56,15 @@ void CostmapWrapper::PointCloudCallback(const livox_ros_driver2::msg::CustomMsg&
     // Update global costmap & publish occupancy grid
     if (mpCostmap_->costmap_flag_) {
         mpCostmap_->UpdateCostmap();
-        PublishGlobalOccupancyGrid(false);
-        PublishLocalOccupancyGrid();
+        if (publish_global_costmap_) {
+            PublishGlobalOccupancyGrid(false);
+        }
+        if (publish_local_costmap_) {
+            PublishLocalOccupancyGrid();
+        }
+        if (publish_bounding_box_) {
+            PublishBoundingBoxes(show_marker_);
+        }
     }
 }
 
@@ -124,6 +142,86 @@ void CostmapWrapper::PublishLocalOccupancyGrid() {
     }
 
     local_occupancy_grid_publisher_->publish(occupancy_grid_map);
+}
+
+void CostmapWrapper::PublishBoundingBoxes(bool show_marker) {
+    autorccar_interfaces::msg::BoundingBoxes bounding_boxes;
+    visualization_msgs::msg::MarkerArray marker_array;
+    marker_id_ = 0;
+
+    // Bounding Boxes
+    BoundingBoxArr boxes = mpCostmap_->GetBoundingBoxes();
+    for (size_t i = 0; i < boxes.size(); i++) {
+        vision_msgs::msg::BoundingBox2D bbox;
+        bbox.size_x = boxes[i].size_x;
+        bbox.size_y = boxes[i].size_y;
+        bbox.center.position.x = boxes[i].center_x;
+        bbox.center.position.y = boxes[i].center_y;
+        bounding_boxes.bounding_boxes.push_back(bbox);
+    }
+    bounding_boxes.num = static_cast<int64_t>(boxes.size());
+    bounding_box_publisher_->publish(bounding_boxes);
+
+    // Visualize Bounding Boxes
+    if (show_marker) {
+        // Add markers
+        for (size_t i = 0; i < boxes.size(); i++) {
+            visualization_msgs::msg::Marker marker;
+            marker.header.stamp = this->get_clock()->now();
+            marker.header.frame_id = "map";
+            marker.ns = "bounding_boxes";
+            marker.id = marker_id_++;
+            marker.type = visualization_msgs::msg::Marker::LINE_STRIP;
+            marker.action = visualization_msgs::msg::Marker::ADD;
+            marker.pose.orientation.w = 1;
+
+            marker.scale.x = 0.05;
+            marker.color.r = 1.0;
+            marker.color.g = 0.0;
+            marker.color.b = 0.0;
+            marker.color.a = 1.0;
+
+            // Define the bounding box vertices
+            geometry_msgs::msg::Point p1, p2, p3, p4;
+            p1.x = boxes[i].center_x - boxes[i].size_x / 2;
+            p1.y = boxes[i].center_y - boxes[i].size_y / 2;
+            p1.z = 0;
+
+            p2.x = boxes[i].center_x + boxes[i].size_x / 2;
+            p2.y = boxes[i].center_y - boxes[i].size_y / 2;
+            p2.z = 0;
+
+            p3.x = boxes[i].center_x + boxes[i].size_x / 2;
+            p3.y = boxes[i].center_y + boxes[i].size_y / 2;
+            p3.z = 0;
+
+            p4.x = boxes[i].center_x - boxes[i].size_x / 2;
+            p4.y = boxes[i].center_y + boxes[i].size_y / 2;
+            p4.z = 0;
+
+            marker.points.push_back(p1);
+            marker.points.push_back(p2);
+            marker.points.push_back(p3);
+            marker.points.push_back(p4);
+            marker.points.push_back(p1);
+
+            marker_array.markers.push_back(marker);
+        }
+
+        // Add markers to delete any remaining ones from the previous frame
+        for (int id = marker_id_; id < last_marker_id_; ++id) {
+            auto marker = visualization_msgs::msg::Marker();
+            marker.header.frame_id = "map";
+            marker.header.stamp = this->get_clock()->now();
+            marker.ns = "bounding_boxes";
+            marker.id = id;
+            marker.action = visualization_msgs::msg::Marker::DELETE;
+            marker_array.markers.push_back(marker);
+        }
+        last_marker_id_ = marker_id_;
+
+        bounding_box_visual_marker_publisher_->publish(marker_array);
+    }
 }
 
 void CostmapWrapper::SaveCostmapAsPgm(const nav_msgs::msg::OccupancyGrid& msg) {

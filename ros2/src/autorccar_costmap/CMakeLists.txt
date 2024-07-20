@@ -11,6 +11,7 @@ find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
 find_package(autorccar_interfaces REQUIRED)
 find_package(pcl_msgs REQUIRED)
 find_package(pcl_conversions REQUIRED)
@@ -36,12 +37,14 @@ add_executable(costmap
   src/main_costmap.cpp
   src/costmap.cpp
   src/costmap_ros_wrapper.cpp
+  src/costmap_config_manager.cpp
 )
 ament_target_dependencies(costmap
   rclcpp
   sensor_msgs
   nav_msgs
   std_msgs
+  visualization_msgs
   autorccar_interfaces
   pcl_msgs
   pcl_conversions
