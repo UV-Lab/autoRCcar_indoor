@@ -1,49 +1,54 @@
 #include "costmap.h"
 
-#include <yaml-cpp/yaml.h>
-
 #include <fstream>
 #include <iostream>
 
-Costmap::Costmap(const std::string& config_file_path) : costmap_flag_(false), cnt_iter_(0) {
-    LoadConfig(config_file_path);
+Costmap::Costmap(ConfigManager* config_manager) : mpConfig_(config_manager), costmap_flag_(false), cnt_iter_(0) {
+    resolution_ = mpConfig_->getGlobalResolution();
+    cnt_limit_ = mpConfig_->getGlobalUpdatePerLidar();
+
+    global_width_ = mpConfig_->getGlobalWidth();
+    global_height_ = mpConfig_->getGlobalHeight();
+
+    local_width_ = mpConfig_->getLocalWidth();
+    local_height_ = mpConfig_->getLocalHeight();
+
+    dbscan_eps_ = mpConfig_->getDbscanEps();
+    dbscan_min_samples_ = mpConfig_->getDbscanMinSamples();
 
     // Initialize global costmap
     global_size_ = {static_cast<int>(global_width_ / resolution_), static_cast<int>(global_height_ / resolution_)};
     global_center_ = {global_size_.x() / 2, global_size_.y() / 2};
     InitCostmap(global_costmap_, global_size_.x(), global_size_.y());
 
+    // Initialize global costmap info
+    global_costmap_info_.size_x = static_cast<unsigned int>(global_size_.x());
+    global_costmap_info_.size_y = static_cast<unsigned int>(global_size_.y());
+    global_costmap_info_.resolution = resolution_;
+    global_costmap_info_.origin_pos_x =
+        global_center_.x() * resolution_ * (-1);  // assume (global_center_x, global_center_y) = (0,0)
+    global_costmap_info_.origin_pos_y = global_center_.y() * resolution_ * (-1);
+    global_costmap_info_.ptr_costmap = &global_costmap_;
+
     // Initialize local costmap
     local_size_ = {static_cast<int>(local_width_ / resolution_), static_cast<int>(local_height_ / resolution_)};
     local_center_ = {local_size_.x() / 2, local_size_.y() / 2};
     InitCostmap(local_costmap_, local_size_.x(), local_size_.y());
 
+    // Initialize local costmap info
+    const int px = std::floor(cur_pose_(0, 3) / resolution_) + global_center_.x();
+    const int py = std::floor(cur_pose_(1, 3) / resolution_) + global_center_.y();
+    local_costmap_info_.size_x = static_cast<unsigned int>(local_size_.x());
+    local_costmap_info_.size_y = static_cast<unsigned int>(local_size_.y());
+    local_costmap_info_.resolution = resolution_;
+    local_costmap_info_.origin_pos_x = (px - global_center_.x() - local_center_.x()) * resolution_;
+    local_costmap_info_.origin_pos_y = (py - global_center_.y() - local_center_.y()) * resolution_;
+    local_costmap_info_.ptr_costmap = &local_costmap_;
+
     // Allocate memory
     cur_point_cloud_.reset(new pcl::PointCloud<PointType>());
     cur_point_cloud_transformed_.reset(new pcl::PointCloud<PointType>());
     cur_point_cloud_filtered_.reset(new pcl::PointCloud<PointType>());
-}
-
-void Costmap::LoadConfig(const std::string& config) {
-    std::ifstream fin(config);
-    if (!fin) {
-        std::cerr << "Failed to open file: " << config << std::endl;
-        exit(-1);
-    }
-    fin.close();
-
-    YAML::Node cfg = YAML::LoadFile(config);
-
-    resolution_ = cfg["global"]["resolution"].as<double>();
-    cnt_limit_ = cfg["global"]["updateEveryNthLidar"].as<unsigned int>();
-
-    global_width_ = cfg["global"]["width"].as<int>();
-    global_height_ = cfg["global"]["height"].as<int>();
-
-    local_width_ = cfg["local"]["width"].as<int>();
-    local_height_ = cfg["local"]["height"].as<int>();
-
-    std::cout << "Successfully loaded the config" << std::endl;
 }
 
 void Costmap::InitCostmap(Eigen::MatrixXd& costmap, int size_x, int size_y) {
@@ -86,6 +91,7 @@ void Costmap::UpdateCostmap() {
     zFilter.setFilterLimits(0.0, 1.0);
     zFilter.filter(*cur_point_cloud_filtered_);
 
+    // Update Global Costmap
     for (const auto& pt : *cur_point_cloud_filtered_) {
         // Get cell indices of the pointcloud
         int x = std::floor(pt.x / resolution_) + global_center_.x();
@@ -97,6 +103,9 @@ void Costmap::UpdateCostmap() {
         // The cells on the bresenham line are free.
         UpdateCellsOnBresenhamLine(sx, sy, x, y);
     }
+
+    UpdateLocalCostmap();
+    CalculateBoundingBoxes();
 
     costmap_flag_ = false;
 }
@@ -161,7 +170,7 @@ void Costmap::UpdateCellsOnBresenhamLine(int sx, int sy, int ex, int ey) {
         }
     }
 
-    // Set costmap.
+    // Set global costmap.
     for (unsigned int i = 0; i < line.size(); i++) {
         UpdateCell(line[i].x(), line[i].y(), P_FREE);
     }
@@ -183,22 +192,7 @@ double Costmap::ProbabilityToLogOdds(double p) const { return std::log(p / (1.0 
 
 double Costmap::LogOddsToProbability(double l) const { return std::exp(l) / (1.0 + std::exp(l)); }
 
-struct CostmapInfo Costmap::GetGlobalCostmapInfo() {
-    struct CostmapInfo info;
-
-    info.size_x = static_cast<unsigned int>(global_size_.x());
-    info.size_y = static_cast<unsigned int>(global_size_.y());
-    info.resolution = resolution_;
-    info.origin_pos_x = global_center_.x() * resolution_ * (-1);  // assume (global_center_x, global_center_y) = (0,0)
-    info.origin_pos_y = global_center_.y() * resolution_ * (-1);
-    info.ptr_costmap = &global_costmap_;
-
-    return info;
-}
-
-struct CostmapInfo Costmap::GetLocalCostmapInfo() {
-    struct CostmapInfo info;
-
+void Costmap::UpdateLocalCostmap() {
     // initialize local costmap.
     local_costmap_.setConstant(ProbabilityToLogOdds(P_UNKNOWN));
 
@@ -214,12 +208,76 @@ struct CostmapInfo Costmap::GetLocalCostmapInfo() {
             global_costmap_.block(px - local_center_.x(), py - local_center_.y(), local_size_.x(), local_size_.y());
     }
 
-    info.size_x = static_cast<unsigned int>(local_size_.x());
-    info.size_y = static_cast<unsigned int>(local_size_.y());
-    info.resolution = resolution_;
-    info.origin_pos_x = (px - global_center_.x() - local_center_.x()) * resolution_;
-    info.origin_pos_y = (py - global_center_.y() - local_center_.y()) * resolution_;
-    info.ptr_costmap = &local_costmap_;
-
-    return info;
+    local_costmap_info_.origin_pos_x = (px - global_center_.x() - local_center_.x()) * resolution_;
+    local_costmap_info_.origin_pos_y = (py - global_center_.y() - local_center_.y()) * resolution_;
 }
+
+void Costmap::CalculateBoundingBoxes() {
+    bounding_boxes_.clear();
+
+    // local costmap에서 클러스터링 할 포인트 추출
+    pcl::PointCloud<PointType>::Ptr cluster_points(new pcl::PointCloud<PointType>);
+
+    for (int i = 0; i < local_costmap_.rows(); ++i) {
+        for (int j = 0; j < local_costmap_.cols(); ++j) {
+            if (local_costmap_(i, j) >= P_OCCUPIED) {
+                pcl::PointXYZI point;
+                point.x = local_costmap_info_.origin_pos_x + resolution_ * i;
+                point.y = local_costmap_info_.origin_pos_y + resolution_ * j;
+                point.z = 0;
+                cluster_points->points.push_back(point);
+            }
+        }
+    }
+
+    pcl::search::KdTree<PointType>::Ptr tree(new pcl::search::KdTree<PointType>);
+    std::vector<pcl::PointIndices> cluster_indices;
+    pcl::EuclideanClusterExtraction<PointType> dbscan;
+
+    if (cluster_points->size() > 0) {
+        // KdTree 객체 생성
+        tree->setInputCloud(cluster_points);
+
+        // DBSCAN
+        dbscan.setClusterTolerance(dbscan_eps_);
+        dbscan.setMinClusterSize(dbscan_min_samples_);
+        dbscan.setSearchMethod(tree);
+        dbscan.setInputCloud(cluster_points);
+        dbscan.extract(cluster_indices);
+    }
+
+    // 클러스터링 결과로부터 Bounding Box 추출
+    for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin(); it != cluster_indices.end();
+         ++it) {
+        // 각 클러스터의 포인트 추가
+        pcl::PointCloud<PointType>::Ptr cluster(new pcl::PointCloud<PointType>);
+        for (std::vector<int>::const_iterator pit = it->indices.begin(); pit != it->indices.end(); ++pit)
+            cluster->points.push_back(cluster_points->points[*pit]);
+
+        cluster->width = cluster->points.size();
+        cluster->height = 1;
+        cluster->is_dense = true;
+
+        // Min, Max 포인트 추출
+        PointType minPt, maxPt;
+        pcl::getMinMax3D(*cluster, minPt, maxPt);
+
+        // Bounding Box 계산
+        BoundingBox box;
+        box.size_x = maxPt.x - minPt.x;
+        box.size_y = maxPt.y - minPt.y;
+        box.center_x = (minPt.x + maxPt.x) / 2.0;
+        box.center_y = (minPt.y + maxPt.y) / 2.0;
+        bounding_boxes_.push_back(box);
+    }
+}
+
+struct CostmapInfo Costmap::GetGlobalCostmapInfo() {
+    return global_costmap_info_;
+}
+
+struct CostmapInfo Costmap::GetLocalCostmapInfo() {
+    return local_costmap_info_;
+}
+
+BoundingBoxArr Costmap::GetBoundingBoxes() { return bounding_boxes_; }

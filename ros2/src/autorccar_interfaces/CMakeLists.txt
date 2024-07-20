@@ -10,6 +10,7 @@ find_package(ament_cmake REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(vision_msgs REQUIRED)
 
 find_package(builtin_interfaces REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
@@ -37,7 +38,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/ControlCommand.msg"
   "msg/Path.msg"
   "msg/PathPoint.msg"
-  DEPENDENCIES std_msgs geometry_msgs 
+  "msg/BoundingBoxes.msg"
+  DEPENDENCIES std_msgs geometry_msgs vision_msgs
 )
 
 
