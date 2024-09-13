@@ -1,7 +1,8 @@
 # Reinforcement Learning
 ### Task
 - 'avoid-v0'
-  
+
+ This task is the navigation and obstacle avoidance.
 ### Dependencies
     pip install -e .
     

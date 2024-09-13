@@ -80,34 +80,33 @@ class autoRCcarEnv(gym.Env):
                                 self.state[2], self.state[4]], dtype=np.float32)        
 
         ## Check terminate
-        collision = False
-        goal = False
+        collided = False
+        is_arrived = False
 
-        collision = Task.is_collision(self)
-        if not collision:
-            goal = Task.is_goal(self)
-        terminated = bool(
-            np.abs(current_pos[0]-self.init_pos[0]) >= self.map_size
-            or np.abs(current_pos[1]-self.init_pos[1]) >= self.map_size
-            or self.steps_cnt == self.max_step
-            or collision
-        )
+        collided = Task.is_collision(self)
+        if not collided:
+            is_arrived = Task.is_goal(self)
+
+        out_of_bounds = bool(np.abs(current_pos[0]-self.init_pos[0]) >= self.map_size
+                          or np.abs(current_pos[1]-self.init_pos[1]) >= self.map_size)
+        step_limit_reached = (self.steps_cnt == self.max_step)
+        terminated = out_of_bounds or step_limit_reached or collided
 
         ## Update reward
         reward = 0
         if terminated:
             reward = -150
-        elif goal:
+        elif is_arrived:
             reward = 200
             terminated = True
             self.goal_flag = True
         else:
             ## relative distance (vehicle-goal)
-            current_distance = np.sqrt(goal_err_x*goal_err_x + goal_err_y*goal_err_y)
-            before_distance = np.sqrt(self.obs_before[0]*self.obs_before[0] + self.obs_before[1]*self.obs_before[1])
+            current_distance = np.hypot(goal_err_x, goal_err_y)  # hypot = sqrt(a^2+b^2)
+            prev_distance = np.hypot(self.obs_before[0], self.obs_before[1])
 
             val = (-1/np.pi)*goal_del_angle + 1  # vehicle/goal relative angle (0 ~ 1)
-            if current_distance < before_distance:
+            if current_distance < prev_distance:
                 reward += val
             else:
                 reward -= 1
@@ -119,7 +118,7 @@ class autoRCcarEnv(gym.Env):
         info = {}
         info['steps'] = self.steps_cnt
         info['state'] = self.state
-        info['done'] = [terminated, collision, goal]
+        info['done'] = [terminated, collided, is_arrived]
 
         self.state_before = self.state
         self.obs_before = observation
