@@ -46,8 +46,6 @@ void PlanningControl::SetGlobalPath(std::vector<Point>&& global_path, std::vecto
     got_global_path_ = global_path_->IsPathGenerated();
 }
 
-void PlanningControl::SetDriveCommand(const DriveCommand& drive_command) { drive_command_ = drive_command; }
-
 void PlanningControl::SetCurrentTargetSpeed(const double speed) { current_target_speed_ = speed; }
 
 void PlanningControl::SetCurrentState(const State& state) { current_state_ = state; }
@@ -59,16 +57,9 @@ bool PlanningControl::GoalReached(const State& state) const {
     return (current_pos - goal_).squaredNorm() < goal_reach_threshold_squared_;
 }
 
-bool PlanningControl::GotStartCommand() const { return drive_command_ == DriveCommand::kStart; }
-
 ControlCommand PlanningControl::GenerateMotionCommand() {
     if (!got_global_path_) {
         std::cout << "Have not received global path yet." << std::endl;
-        return {0.0, 0.0};
-    }
-
-    if (!GotStartCommand()) {
-        std::cout << "Have not received start command from GCS yet." << std::endl;
         return {0.0, 0.0};
     }
 

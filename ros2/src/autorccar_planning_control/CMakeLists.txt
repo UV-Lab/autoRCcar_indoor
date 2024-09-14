@@ -26,13 +26,11 @@ add_executable(planning_control_node
   src/planning_control.cpp
   src/cubic_spline_path.cpp
   src/frenet_optimal_path.cpp
-  src/hw_control.cpp
 )
 
 ament_target_dependencies(planning_control_node
   rclcpp 
   Eigen3
-  std_msgs
   nav_msgs
   geometry_msgs
   visualization_msgs

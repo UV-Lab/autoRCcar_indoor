@@ -10,31 +10,22 @@
 #include "common.h"
 #include "geometry_msgs/msg/twist.hpp"
 #include "geometry_msgs/msg/vector3.hpp"
-#include "hw_control.h"
 #include "nav_msgs/msg/occupancy_grid.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "nav_msgs/msg/path.hpp"
 #include "planning_control.h"
 #include "rclcpp/rclcpp.hpp"
-#include "std_msgs/msg/float64_multi_array.hpp"
-#include "std_msgs/msg/int8.hpp"
 #include "visualization_msgs/msg/marker_array.hpp"
 
 namespace {
 
 using Point = Eigen::Vector2d;
-using autorccar::planning_control::planning_control::DriveCommand;
 
 }  // namespace
-
-hw_control hw;
 
 class PlanningControlNode : public rclcpp::Node {
    public:
     explicit PlanningControlNode(const rclcpp::NodeOptions& options) : Node("planning_control", options) {
-        // uart
-        hw.fd = hw.uart_init("/dev/ttyUSB0");
-
         // read parameters
         ReadParameters();
 
@@ -44,7 +35,8 @@ class PlanningControlNode : public rclcpp::Node {
 
         // publisher
         control_command_publisher_ = create_publisher<autorccar_interfaces::msg::ControlCommand>(
-            "planning_control/control_command", rclcpp::SystemDefaultsQoS());
+            "planning_control/control_command",
+            rclcpp::SystemDefaultsQoS().deadline(std::chrono::milliseconds(control_command_deadline_)));
         global_path_marker_publisher_ = create_publisher<visualization_msgs::msg::MarkerArray>(
             "rviz/global_path_marker", rclcpp::SystemDefaultsQoS());
         current_pos_marker_publisher_ =
@@ -70,10 +62,6 @@ class PlanningControlNode : public rclcpp::Node {
         occupancy_grid_subscriber_ =
             create_subscription<nav_msgs::msg::OccupancyGrid>("occupancy_grid/local", 10, occupancy_grid_callback);
 
-        auto gcs_command_callback = [this](std_msgs::msg::Int8::UniquePtr msg) { this->GcsCommandCallback(*msg); };
-        gcs_command_subscriber_ =
-            create_subscription<std_msgs::msg::Int8>("gcs/command", rclcpp::SystemDefaultsQoS(), gcs_command_callback);
-
         auto global_path_callback = [this](autorccar_interfaces::msg::Path::UniquePtr msg) {
             this->GlobalPathCallback(*msg);
         };
@@ -86,6 +74,8 @@ class PlanningControlNode : public rclcpp::Node {
         get_parameter_or<double>("rccar_config.wheelbase", parameters_.wheelbase, parameters_.wheelbase);
         get_parameter_or<double>("rccar_config.max_steering_angle", parameters_.max_steering_angle,
                                  parameters_.max_steering_angle);
+        get_parameter_or<int>("hardware_control.control_command_deadline", control_command_deadline_,
+                              control_command_deadline_);
         get_parameter_or<double>("controller.goal_reach_threshold", parameters_.control.goal_reach_threshold,
                                  parameters_.control.goal_reach_threshold);
         get_parameter_or<double>("controller.target_speed", parameters_.target_speed, parameters_.target_speed);
@@ -157,24 +147,6 @@ class PlanningControlNode : public rclcpp::Node {
         control_command_msg.steering_angle = control_command.steering_angle;
 
         control_command_publisher_->publish(control_command_msg);
-
-        hw.msg.x = control_command_msg.steering_angle;
-        hw.msg.y = control_command_msg.speed;
-        hw.msg.z = hw.cmdMode;
-        hw.uart_tx(hw.fd, hw.msg);
-    }
-
-    void GcsCommandCallback(const std_msgs::msg::Int8& msg) const {
-        hw.cmdMode = msg.data;
-        if (msg.data == 0) {
-            planning_controller_->SetDriveCommand(DriveCommand::kStop);
-        } else if (msg.data == 1) {
-            planning_controller_->SetCurrentTargetSpeed(0.0);
-            planning_controller_->SetDriveCommand(DriveCommand::kStart);
-        } else {
-            planning_controller_->SetDriveCommand(DriveCommand::kStop);
-            std::cout << "Have undefined drive command." << std::endl;
-        }
     }
 
     void GlobalPathCallback(const autorccar_interfaces::msg::Path& msg) const {
@@ -357,14 +329,14 @@ class PlanningControlNode : public rclcpp::Node {
     // subscriber
     rclcpp::Subscription<autorccar_interfaces::msg::NavState>::SharedPtr nav_state_subscriber_;
     rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr occupancy_grid_subscriber_;
-    rclcpp::Subscription<std_msgs::msg::Int8>::SharedPtr gcs_command_subscriber_;
     rclcpp::Subscription<autorccar_interfaces::msg::Path>::SharedPtr global_path_subscriber_;
 
     // variables
-    int nav_hz_ = 100;
-    int control_hz_ = 50;
-    int nav_sample_count_ = 0;
-    int nav_sampling_period_ = 2;
+    int nav_hz_{100};
+    int control_hz_{50};
+    int nav_sample_count_{0};
+    int nav_sampling_period_{2};
+    int control_command_deadline_{1000};
 };
 
 int main(int argc, char** argv) {
