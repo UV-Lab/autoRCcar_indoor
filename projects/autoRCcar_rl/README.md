@@ -1,22 +1,30 @@
-# autoRCcar Reinforcement Learning
-### Environment
-- autoRCcar_straight
-- autoRCcar_waypoint
-  
+# Reinforcement Learning
+### Task
+- 'avoid-v0'
+
+ This task is the navigation and obstacle avoidance.
 ### Dependencies
-    pip install requriments.txt
     pip install -e .
     
 ### Train
-    python train.py
-
-    tensorboard --logdir=log
-    http://localhost:6006/
-
+```
+python train_model.py <suffix>
+ex) python train_model.py tqc1
+```
+```
+tensorboard --logdir=log
+```
+- http://localhost:6006/
 ### Run
-    python run_model.py <model_name>
-    ex) python run_model.py best_waypoint_v1
-
-    python eval_model.py <model_name>
+- single goal
+```
+python run_model.py best_avoid-v0_ppo1
+python run_model.py avoid-v0_tqc1
+```
+- Multiple waypoint
+```
+cd eval
+python eval_model.py best_avoid-v0_ppo1
+```
     
 
