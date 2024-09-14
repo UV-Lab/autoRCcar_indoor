@@ -3,7 +3,8 @@
 #include <fstream>
 #include <iostream>
 
-Costmap::Costmap(ConfigManager* config_manager) : mpConfig_(config_manager), costmap_flag_(false), cnt_iter_(0) {
+Costmap::Costmap(ConfigManager* config_manager)
+    : costmap_flag_(false), cnt_iter_(0), cnt_limit_(0), mpConfig_(config_manager) {
     resolution_ = mpConfig_->getGlobalResolution();
     cnt_limit_ = mpConfig_->getGlobalUpdatePerLidar();
 
@@ -272,12 +273,8 @@ void Costmap::CalculateBoundingBoxes() {
     }
 }
 
-struct CostmapInfo Costmap::GetGlobalCostmapInfo() {
-    return global_costmap_info_;
-}
+struct CostmapInfo Costmap::GetGlobalCostmapInfo() { return global_costmap_info_; }
 
-struct CostmapInfo Costmap::GetLocalCostmapInfo() {
-    return local_costmap_info_;
-}
+struct CostmapInfo Costmap::GetLocalCostmapInfo() { return local_costmap_info_; }
 
-BoundingBoxArr Costmap::GetBoundingBoxes() { return bounding_boxes_; }
+const BoundingBoxArr& Costmap::GetBoundingBoxes() { return bounding_boxes_; }

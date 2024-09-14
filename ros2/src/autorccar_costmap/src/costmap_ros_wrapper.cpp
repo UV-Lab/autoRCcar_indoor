@@ -4,7 +4,7 @@
 #include "rclcpp/rclcpp.hpp"
 
 CostmapWrapper::CostmapWrapper(Costmap* costmap, ConfigManager* config_manager)
-    : Node("costmap"), mpCostmap_(costmap), mpConfig_(config_manager) {
+    : Node("costmap"), last_marker_id_(0), marker_id_(0), mpCostmap_(costmap), mpConfig_(config_manager) {
     point_cloud_subscriber_ = this->create_subscription<livox_ros_driver2::msg::CustomMsg>(
         "livox/lidar", 10, std::bind(&CostmapWrapper::PointCloudCallback, this, std::placeholders::_1));
 
@@ -150,13 +150,14 @@ void CostmapWrapper::PublishBoundingBoxes(bool show_marker) {
     marker_id_ = 0;
 
     // Bounding Boxes
-    BoundingBoxArr boxes = mpCostmap_->GetBoundingBoxes();
-    for (size_t i = 0; i < boxes.size(); i++) {
+    const BoundingBoxArr& boxes = mpCostmap_->GetBoundingBoxes();
+    bounding_boxes.bounding_boxes.reserve(boxes.size());
+    for (const auto& box : boxes) {
         vision_msgs::msg::BoundingBox2D bbox;
-        bbox.size_x = boxes[i].size_x;
-        bbox.size_y = boxes[i].size_y;
-        bbox.center.position.x = boxes[i].center_x;
-        bbox.center.position.y = boxes[i].center_y;
+        bbox.size_x = box.size_x;
+        bbox.size_y = box.size_y;
+        bbox.center.position.x = box.center_x;
+        bbox.center.position.y = box.center_y;
         bounding_boxes.bounding_boxes.push_back(bbox);
     }
     bounding_boxes.num = static_cast<int64_t>(boxes.size());
@@ -165,7 +166,7 @@ void CostmapWrapper::PublishBoundingBoxes(bool show_marker) {
     // Visualize Bounding Boxes
     if (show_marker) {
         // Add markers
-        for (size_t i = 0; i < boxes.size(); i++) {
+        for (const auto& box : boxes) {
             visualization_msgs::msg::Marker marker;
             marker.header.stamp = this->get_clock()->now();
             marker.header.frame_id = "map";
@@ -183,20 +184,20 @@ void CostmapWrapper::PublishBoundingBoxes(bool show_marker) {
 
             // Define the bounding box vertices
             geometry_msgs::msg::Point p1, p2, p3, p4;
-            p1.x = boxes[i].center_x - boxes[i].size_x / 2;
-            p1.y = boxes[i].center_y - boxes[i].size_y / 2;
+            p1.x = box.center_x - box.size_x / 2;
+            p1.y = box.center_y - box.size_y / 2;
             p1.z = 0;
 
-            p2.x = boxes[i].center_x + boxes[i].size_x / 2;
-            p2.y = boxes[i].center_y - boxes[i].size_y / 2;
+            p2.x = box.center_x + box.size_x / 2;
+            p2.y = box.center_y - box.size_y / 2;
             p2.z = 0;
 
-            p3.x = boxes[i].center_x + boxes[i].size_x / 2;
-            p3.y = boxes[i].center_y + boxes[i].size_y / 2;
+            p3.x = box.center_x + box.size_x / 2;
+            p3.y = box.center_y + box.size_y / 2;
             p3.z = 0;
 
-            p4.x = boxes[i].center_x - boxes[i].size_x / 2;
-            p4.y = boxes[i].center_y + boxes[i].size_y / 2;
+            p4.x = box.center_x - box.size_x / 2;
+            p4.y = box.center_y + box.size_y / 2;
             p4.z = 0;
 
             marker.points.push_back(p1);
