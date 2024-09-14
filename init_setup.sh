@@ -18,7 +18,8 @@ sudo apt-get install libv4l-dev libudev-dev
 pip install numpy PyQt5 pyqtgraph
 
 ## CostMap
-sudo apt-get install -y libeigen3-dev libyaml-cpp-dev
+sudo apt-get install -y libeigen3-dev libyaml-cpp-dev \
+		ros-humble-vision-msgs
 
 ## Livox-SDK2
 cd Livox-SDK2

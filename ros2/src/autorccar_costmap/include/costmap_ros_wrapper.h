@@ -24,15 +24,15 @@ class CostmapWrapper : public rclcpp::Node {
     CostmapWrapper(Costmap* costmap, ConfigManager* config_manager);
 
    private:
-    Costmap* mpCostmap_;
-    ConfigManager* mpConfig_;
-
     bool publish_global_costmap_ = false;
     bool publish_local_costmap_ = false;
     bool publish_bounding_box_ = false;
     bool show_marker_ = false;
-    int marker_id_ = 0;
-    int last_marker_id_ = 0;
+    int last_marker_id_;
+    int marker_id_;
+
+    Costmap* mpCostmap_;
+    ConfigManager* mpConfig_;
 
     rclcpp::Subscription<livox_ros_driver2::msg::CustomMsg>::SharedPtr point_cloud_subscriber_;  // livox lidar
     rclcpp::Subscription<autorccar_interfaces::msg::NavState>::SharedPtr nav_state_subscriber_;  // navigation output

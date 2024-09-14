@@ -44,7 +44,7 @@ class Costmap {
    public:
     Costmap(ConfigManager* config_manager);
 
-    bool costmap_flag_ = false;  // noticify it's time to update the costmap
+    bool costmap_flag_;  // noticify it's time to update the costmap
 
     void UpdatePointCloud(const pcl::PointCloud<PointType>::Ptr pcl);
     void UpdatePose(Eigen::Matrix<double, 4, 4>& trans);
@@ -52,13 +52,13 @@ class Costmap {
 
     struct CostmapInfo GetGlobalCostmapInfo();
     struct CostmapInfo GetLocalCostmapInfo();
-    BoundingBoxArr GetBoundingBoxes();
+    const BoundingBoxArr& GetBoundingBoxes();
 
    private:
-    ConfigManager* mpConfig_;
+    unsigned int cnt_iter_;
+    unsigned int cnt_limit_;
 
-    unsigned int cnt_iter_ = 0;
-    unsigned int cnt_limit_ = 0;
+    ConfigManager* mpConfig_;
 
     // global costmap
     struct CostmapInfo global_costmap_info_;
