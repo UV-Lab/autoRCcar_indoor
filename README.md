@@ -2,8 +2,9 @@
 
 ## Bootstrapping
 
-### Install and Build
-Run `init_setup.sh` to install dependencies and build ROS2 packages. Or you can do it manually by refering to the script.
+### Dependency
+Run `init_setup.sh` to install packages dependency. Or you can do it manually by refering to the script.
+
 
 ### Build
 Run `build_ros2.sh` for the first build. It correctly builds the Livox package.
