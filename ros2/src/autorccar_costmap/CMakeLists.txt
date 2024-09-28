@@ -39,7 +39,7 @@ add_executable(costmap
   src/main_costmap.cpp
   src/costmap.cpp
   src/costmap_ros_wrapper.cpp
-  src/costmap_config_manager.cpp
+  src/config_reader.cpp
 )
 ament_target_dependencies(costmap
   rclcpp

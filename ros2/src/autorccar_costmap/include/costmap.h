@@ -18,7 +18,7 @@
 #include <utility>
 #include <vector>
 
-#include "costmap_config_manager.h"
+#include "config_reader.h"
 
 struct CostmapInfo {
     double resolution = 0.0;    // map resolution [m/cell]
@@ -42,7 +42,7 @@ using BoundingBoxArr = std::vector<BoundingBox>;
 
 class Costmap {
    public:
-    Costmap(ConfigManager* config_manager);
+    Costmap(std::shared_ptr<ConfigReader> config_reader);
 
     bool costmap_flag_;  // noticify it's time to update the costmap
 
@@ -53,27 +53,28 @@ class Costmap {
     struct CostmapInfo GetGlobalCostmapInfo();
     struct CostmapInfo GetLocalCostmapInfo();
     const BoundingBoxArr& GetBoundingBoxes();
+    std::shared_ptr<ConfigReader> GetConfigReaderPtr();
 
    private:
+    std::shared_ptr<ConfigReader> config_reader_;
+
     unsigned int cnt_iter_;
     unsigned int cnt_limit_;
-
-    ConfigManager* mpConfig_;
 
     // global costmap
     struct CostmapInfo global_costmap_info_;
     Eigen::MatrixXd global_costmap_;
-    double resolution_ = 0.0;  // costmap resolution [m/cell]
-    int global_width_ = 0;     // costmap width and height [m]
-    int global_height_ = 0;
+    double resolution_;  // costmap resolution [m/cell]
+    int global_width_;   // costmap width and height [m]
+    int global_height_;
     Eigen::Vector2i global_size_ = Eigen::Vector2i::Zero();    // number of cell
     Eigen::Vector2i global_center_ = Eigen::Vector2i::Zero();  // origin cell index
 
     // local costmap
     struct CostmapInfo local_costmap_info_;
     Eigen::MatrixXd local_costmap_;
-    int local_width_ = 0;
-    int local_height_ = 0;
+    int local_width_;
+    int local_height_;
     Eigen::Vector2i local_size_ = Eigen::Vector2i::Zero();    // number of cell
     Eigen::Vector2i local_center_ = Eigen::Vector2i::Zero();  // origin cell index
 
@@ -87,8 +88,8 @@ class Costmap {
     Eigen::Matrix<double, 4, 4> cur_pose_ = Eigen::Matrix4d::Zero();
 
     BoundingBoxArr bounding_boxes_;
-    double dbscan_eps_ = 0.0;
-    int dbscan_min_samples_ = 0;
+    double dbscan_eps_;
+    int dbscan_min_samples_;
 
     void InitCostmap(Eigen::MatrixXd& costmap, int size_x, int size_y);
     void UpdateCostmapFlag();
