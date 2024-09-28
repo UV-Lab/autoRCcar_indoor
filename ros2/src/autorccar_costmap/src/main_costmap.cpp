@@ -3,8 +3,8 @@
 #include <memory>
 #include <string>
 
+#include "config_reader.h"
 #include "costmap.h"
-#include "costmap_config_manager.h"
 #include "costmap_ros_wrapper.h"
 #include "rclcpp/rclcpp.hpp"
 
@@ -13,11 +13,10 @@ int main(int argc, char* argv[]) {
 
     std::string config = argv[1];
 
-    ConfigManager config_manager(config);
+    auto config_reader = std::make_shared<ConfigReader>(config);
+    auto occupancy_grid = std::make_shared<Costmap>(config_reader);
 
-    Costmap occupancy_grid(&config_manager);
-
-    auto node = std::make_shared<CostmapWrapper>(&occupancy_grid, &config_manager);
+    auto node = std::make_shared<CostmapWrapper>(occupancy_grid);
     rclcpp::spin(node);
 
     rclcpp::shutdown();

@@ -11,7 +11,6 @@
 #include "autorccar_interfaces/msg/bounding_boxes.hpp"
 #include "autorccar_interfaces/msg/nav_state.hpp"
 #include "costmap.h"
-#include "costmap_config_manager.h"
 #include "livox_ros_driver2/msg/custom_msg.hpp"
 #include "nav_msgs/msg/occupancy_grid.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -21,18 +20,17 @@
 
 class CostmapWrapper : public rclcpp::Node {
    public:
-    CostmapWrapper(Costmap* costmap, ConfigManager* config_manager);
+    CostmapWrapper(std::shared_ptr<Costmap> costmap);
 
    private:
-    bool publish_global_costmap_ = false;
-    bool publish_local_costmap_ = false;
-    bool publish_bounding_box_ = false;
-    bool show_marker_ = false;
+    std::shared_ptr<Costmap> mpCostmap_;
+
+    bool publish_global_costmap_;
+    bool publish_local_costmap_;
+    bool publish_bounding_box_;
+    bool show_marker_;
     int last_marker_id_;
     int marker_id_;
-
-    Costmap* mpCostmap_;
-    ConfigManager* mpConfig_;
 
     rclcpp::Subscription<livox_ros_driver2::msg::CustomMsg>::SharedPtr point_cloud_subscriber_;  // livox lidar
     rclcpp::Subscription<autorccar_interfaces::msg::NavState>::SharedPtr nav_state_subscriber_;  // navigation output
