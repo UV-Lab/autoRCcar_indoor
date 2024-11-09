@@ -31,4 +31,4 @@ cmake .. && make -j
 sudo make install
 cd ../..
 
-./ros2_build.sh
+./build_ros2.sh
