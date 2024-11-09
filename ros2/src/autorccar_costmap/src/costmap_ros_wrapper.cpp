@@ -1,10 +1,11 @@
 #include "costmap_ros_wrapper.h"
 
+#include "config_reader.h"
 #include "costmap.h"
 #include "rclcpp/rclcpp.hpp"
 
-CostmapWrapper::CostmapWrapper(Costmap* costmap, ConfigManager* config_manager)
-    : Node("costmap"), last_marker_id_(0), marker_id_(0), mpCostmap_(costmap), mpConfig_(config_manager) {
+CostmapWrapper::CostmapWrapper(std::shared_ptr<Costmap> costmap)
+    : Node("costmap"), mpCostmap_(costmap), last_marker_id_(0), marker_id_(0) {
     point_cloud_subscriber_ = this->create_subscription<livox_ros_driver2::msg::CustomMsg>(
         "livox/lidar", 10, std::bind(&CostmapWrapper::PointCloudCallback, this, std::placeholders::_1));
 
@@ -23,10 +24,8 @@ CostmapWrapper::CostmapWrapper(Costmap* costmap, ConfigManager* config_manager)
     bounding_box_visual_marker_publisher_ =
         this->create_publisher<visualization_msgs::msg::MarkerArray>("bounding_boxes/visual_marker", 10);
 
-    publish_global_costmap_ = mpConfig_->getPublishGlobalCostmap();
-    publish_local_costmap_ = mpConfig_->getPublishLocalCostmap();
-    publish_bounding_box_ = mpConfig_->getPublishObjectDetection();
-    show_marker_ = mpConfig_->getVisualizeObjectDetection();
+    // Get Yaml configs
+    config_ = costmap->GetConfig();
 
     // Initialization
     point_cloud_in_.reset(new pcl::PointCloud<pcl::PointXYZI>());
@@ -56,14 +55,14 @@ void CostmapWrapper::PointCloudCallback(const livox_ros_driver2::msg::CustomMsg&
     // Update global costmap & publish occupancy grid
     if (mpCostmap_->costmap_flag_) {
         mpCostmap_->UpdateCostmap();
-        if (publish_global_costmap_) {
+        if (config_.publish_global_costmap) {
             PublishGlobalOccupancyGrid(false);
         }
-        if (publish_local_costmap_) {
+        if (config_.publish_local_costmap) {
             PublishLocalOccupancyGrid();
         }
-        if (publish_bounding_box_) {
-            PublishBoundingBoxes(show_marker_);
+        if (config_.publish_object_detection) {
+            PublishBoundingBoxes(config_.visualize_object_detection);
         }
     }
 }
