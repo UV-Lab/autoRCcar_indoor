@@ -53,28 +53,23 @@ class Costmap {
     struct CostmapInfo GetGlobalCostmapInfo();
     struct CostmapInfo GetLocalCostmapInfo();
     const BoundingBoxArr& GetBoundingBoxes();
-    std::shared_ptr<ConfigReader> GetConfigReaderPtr();
+    struct Config GetConfig() const;
 
    private:
-    std::shared_ptr<ConfigReader> config_reader_;
-
+    Config config_;
     unsigned int cnt_iter_;
     unsigned int cnt_limit_;
 
     // global costmap
     struct CostmapInfo global_costmap_info_;
     Eigen::MatrixXd global_costmap_;
-    double resolution_;  // costmap resolution [m/cell]
-    int global_width_;   // costmap width and height [m]
-    int global_height_;
     Eigen::Vector2i global_size_ = Eigen::Vector2i::Zero();    // number of cell
     Eigen::Vector2i global_center_ = Eigen::Vector2i::Zero();  // origin cell index
-
+    double resolution_;                                        // costmap resolution [m/cell]
+    
     // local costmap
     struct CostmapInfo local_costmap_info_;
     Eigen::MatrixXd local_costmap_;
-    int local_width_;
-    int local_height_;
     Eigen::Vector2i local_size_ = Eigen::Vector2i::Zero();    // number of cell
     Eigen::Vector2i local_center_ = Eigen::Vector2i::Zero();  // origin cell index
 
@@ -88,8 +83,6 @@ class Costmap {
     Eigen::Matrix<double, 4, 4> cur_pose_ = Eigen::Matrix4d::Zero();
 
     BoundingBoxArr bounding_boxes_;
-    double dbscan_eps_;
-    int dbscan_min_samples_;
 
     void InitCostmap(Eigen::MatrixXd& costmap, int size_x, int size_y);
     void UpdateCostmapFlag();

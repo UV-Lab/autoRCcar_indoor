@@ -10,6 +10,7 @@
 
 #include "autorccar_interfaces/msg/bounding_boxes.hpp"
 #include "autorccar_interfaces/msg/nav_state.hpp"
+#include "config_reader.h"
 #include "costmap.h"
 #include "livox_ros_driver2/msg/custom_msg.hpp"
 #include "nav_msgs/msg/occupancy_grid.hpp"
@@ -25,10 +26,8 @@ class CostmapWrapper : public rclcpp::Node {
    private:
     std::shared_ptr<Costmap> mpCostmap_;
 
-    bool publish_global_costmap_;
-    bool publish_local_costmap_;
-    bool publish_bounding_box_;
-    bool show_marker_;
+    Config config_;
+
     int last_marker_id_;
     int marker_id_;
 
