@@ -23,15 +23,13 @@ ConfigReader::ConfigReader(const std::string &node_file_path) {
     config_.dbscan_eps = node_["object_detection"]["dbscan"]["eps"].as<double>();
     config_.dbscan_min_samples = node_["object_detection"]["dbscan"]["min_samples"].as<int>();
 
-    ros_config_.publish_global_costmap = node_["global"]["publish"].as<bool>();
-    ros_config_.publish_local_costmap = node_["local"]["publish"].as<bool>();
-    ros_config_.publish_object_detection = node_["object_detection"]["publish"].as<bool>();
-    ros_config_.visualize_object_detection = node_["object_detection"]["visualize"].as<bool>();
+    config_.publish_global_costmap = node_["global"]["publish"].as<bool>();
+    config_.publish_local_costmap = node_["local"]["publish"].as<bool>();
+    config_.publish_object_detection = node_["object_detection"]["publish"].as<bool>();
+    config_.visualize_object_detection = node_["object_detection"]["visualize"].as<bool>();
 
     std::cout << "Successfully loaded the config" << std::endl;
 }
 
 struct Config ConfigReader::GetConfig() const { return config_; }
-
-struct RosConfig ConfigReader::GetRosConfig() const { return ros_config_; }
 

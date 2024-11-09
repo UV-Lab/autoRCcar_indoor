@@ -3,21 +3,14 @@
 #include <fstream>
 #include <iostream>
 
-Costmap::Costmap(std::shared_ptr<ConfigReader> config_reader)
-    : costmap_flag_(false), config_reader_(config_reader), cnt_iter_(0), cnt_limit_(0) {
+Costmap::Costmap(std::shared_ptr<ConfigReader> config_reader) : costmap_flag_(false), cnt_iter_(0), cnt_limit_(0) {
     // Get Yaml configs
-    Config config = config_reader_->GetConfig();
-    resolution_ = config.global_resolution;
-    cnt_limit_ = config.global_update_per_lidar;
-    global_width_ = config.global_width;
-    global_height_ = config.global_height;
-    local_width_ = config.local_width;
-    local_height_ = config.local_height;
-    dbscan_eps_ = config.dbscan_eps;
-    dbscan_min_samples_ = config.dbscan_min_samples;
+    config_ = config_reader->GetConfig();
+    resolution_ = config_.global_resolution;
+    cnt_limit_ = config_.global_update_per_lidar;
 
     // Initialize global costmap
-    global_size_ = {static_cast<int>(global_width_ / resolution_), static_cast<int>(global_height_ / resolution_)};
+    global_size_ = {static_cast<int>(config_.global_width / resolution_), static_cast<int>(config_.global_height / resolution_)};
     global_center_ = {global_size_.x() / 2, global_size_.y() / 2};
     InitCostmap(global_costmap_, global_size_.x(), global_size_.y());
 
@@ -31,7 +24,7 @@ Costmap::Costmap(std::shared_ptr<ConfigReader> config_reader)
     global_costmap_info_.ptr_costmap = &global_costmap_;
 
     // Initialize local costmap
-    local_size_ = {static_cast<int>(local_width_ / resolution_), static_cast<int>(local_height_ / resolution_)};
+    local_size_ = {static_cast<int>(config_.local_width / resolution_), static_cast<int>(config_.local_height / resolution_)};
     local_center_ = {local_size_.x() / 2, local_size_.y() / 2};
     InitCostmap(local_costmap_, local_size_.x(), local_size_.y());
 
@@ -239,8 +232,8 @@ void Costmap::CalculateBoundingBoxes() {
         tree->setInputCloud(cluster_points);
 
         // DBSCAN
-        dbscan.setClusterTolerance(dbscan_eps_);
-        dbscan.setMinClusterSize(dbscan_min_samples_);
+        dbscan.setClusterTolerance(config_.dbscan_eps);
+        dbscan.setMinClusterSize(config_.dbscan_min_samples);
         dbscan.setSearchMethod(tree);
         dbscan.setInputCloud(cluster_points);
         dbscan.extract(cluster_indices);
@@ -278,4 +271,5 @@ struct CostmapInfo Costmap::GetLocalCostmapInfo() { return local_costmap_info_; 
 
 const BoundingBoxArr& Costmap::GetBoundingBoxes() { return bounding_boxes_; }
 
-std::shared_ptr<ConfigReader> Costmap::GetConfigReaderPtr() { return config_reader_; }
+struct Config Costmap::GetConfig() const { return config_; }
+

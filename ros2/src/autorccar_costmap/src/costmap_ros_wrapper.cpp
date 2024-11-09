@@ -25,11 +25,7 @@ CostmapWrapper::CostmapWrapper(std::shared_ptr<Costmap> costmap)
         this->create_publisher<visualization_msgs::msg::MarkerArray>("bounding_boxes/visual_marker", 10);
 
     // Get Yaml configs
-    RosConfig ros_config = costmap->GetConfigReaderPtr()->GetRosConfig();
-    publish_global_costmap_ = ros_config.publish_global_costmap;
-    publish_local_costmap_ = ros_config.publish_local_costmap;
-    publish_bounding_box_ = ros_config.publish_object_detection;
-    show_marker_ = ros_config.visualize_object_detection;
+    config_ = costmap->GetConfig();
 
     // Initialization
     point_cloud_in_.reset(new pcl::PointCloud<pcl::PointXYZI>());
@@ -59,14 +55,14 @@ void CostmapWrapper::PointCloudCallback(const livox_ros_driver2::msg::CustomMsg&
     // Update global costmap & publish occupancy grid
     if (mpCostmap_->costmap_flag_) {
         mpCostmap_->UpdateCostmap();
-        if (publish_global_costmap_) {
+        if (config_.publish_global_costmap) {
             PublishGlobalOccupancyGrid(false);
         }
-        if (publish_local_costmap_) {
+        if (config_.publish_local_costmap) {
             PublishLocalOccupancyGrid();
         }
-        if (publish_bounding_box_) {
-            PublishBoundingBoxes(show_marker_);
+        if (config_.publish_object_detection) {
+            PublishBoundingBoxes(config_.visualize_object_detection);
         }
     }
 }
