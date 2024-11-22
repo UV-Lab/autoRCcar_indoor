@@ -4,6 +4,7 @@
 #include <eigen3/Eigen/Dense>
 #include <iostream>
 #include <limits>
+#include <vector>
 
 namespace {
 
@@ -50,7 +51,14 @@ void PlanningControl::SetCurrentTargetSpeed(const double speed) { current_target
 
 void PlanningControl::SetCurrentState(const State& state) { current_state_ = state; }
 
-void PlanningControl::PlanOnce() { frenet_optimal_path_->Planning(global_path_, current_state_); }
+void PlanningControl::SetBoundingBoxes(std::vector<BoundingBox>&& bounding_boxes) {
+    frenet_optimal_path_->SetBoundingBoxes(std::move(bounding_boxes));
+}
+
+void PlanningControl::PlanOnce() {
+    if (!got_global_path_) return;
+    frenet_optimal_path_->Planning(global_path_, current_state_);
+}
 
 bool PlanningControl::GoalReached(const State& state) const {
     Point current_pos(state.pos.x(), state.pos.y());

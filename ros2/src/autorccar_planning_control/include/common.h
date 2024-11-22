@@ -8,7 +8,7 @@ namespace planning_control {
 namespace common {
 
 struct State {
-    double timestamp = 0.0;
+    double timestamp{0.0};
     Eigen::Vector3d pos;
     Eigen::Vector3d vel;
     Eigen::Quaterniond quat;
@@ -16,9 +16,16 @@ struct State {
     Eigen::Vector3d ang_vel;
 };
 
+struct BoundingBox {
+    double x_min{0.0};
+    double x_max{0.0};
+    double y_min{0.0};
+    double y_max{0.0};
+};
+
 struct ControlCommand {
-    double speed = 0.0;
-    double steering_angle = 0.0;
+    double speed{0.0};
+    double steering_angle{0.0};
 };
 
 }  // namespace common
