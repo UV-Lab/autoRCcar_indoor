@@ -17,6 +17,7 @@ namespace planning_control {
 
 // Aliases for convenience.
 using Point = Eigen::Vector2d;
+using common::BoundingBox;
 using common::ControlCommand;
 using common::State;
 using frenet_optimal_path::FrenetOptimalPath;
@@ -55,6 +56,7 @@ class PlanningControl {
     void SetGlobalPath(std::vector<Point>&& global_path, std::vector<double>&& speeds);
     void SetCurrentTargetSpeed(const double speed);
     void SetCurrentState(const State& state);
+    void SetBoundingBoxes(std::vector<BoundingBox>&& bounding_boxes);
     void PlanOnce();
     ControlCommand GenerateMotionCommand();
     Point GetLookAheadPoint();

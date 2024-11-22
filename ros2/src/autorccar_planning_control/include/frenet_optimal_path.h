@@ -16,6 +16,7 @@ namespace frenet_optimal_path {
 // aliases for convenience.
 using Path = std::vector<Point>;
 using Point = Eigen::Vector2d;
+using common::BoundingBox;
 using common::State;
 
 struct FrenetPath {
@@ -129,6 +130,7 @@ class FrenetOptimalPath {
     explicit FrenetOptimalPath(const Parameters& parameters);
 
     void Planning(const std::unique_ptr<CubicSplinePath>& global_path, const State& current_state);
+    void SetBoundingBoxes(std::vector<BoundingBox>&& bounding_boxes);
     bool IsPathGenerated();
     FrenetPath GetCurrentFrenetPath() const;
 
@@ -139,10 +141,12 @@ class FrenetOptimalPath {
     void CalculateGlobalPaths(const std::unique_ptr<CubicSplinePath>& global_path);
     void CheckPaths();
     void CheckCollision();
+    bool CheckPathCollision(const std::vector<Eigen::Vector2d>& path, const std::vector<BoundingBox>& bounding_boxes);
 
     Parameters parameters_;
     FrenetPath current_frenet_path_;
     std::vector<FrenetPath> frenet_paths_;
+    std::vector<BoundingBox> bounding_boxes_;
 };
 
 }  // namespace frenet_optimal_path

@@ -21,7 +21,7 @@
       min_t: 4.0 # min prediction time [s]
       d_target_speed: 1.0 # target speed sampling length [m/s]
       n_speed_sample: 3 # sampling number of target speed
-      robot_radius: 1.0 # [m]
+      robot_radius: 0.3 # [m]
       k_j: 0.1
       k_t: 0.1
       k_d: 1.0
@@ -31,3 +31,4 @@
     simulator:
       simulation_hz: 500 # [Hz]
       nav_pub_hz: 100 # [Hz]
+      bounding_box_pub_hz: 10 # [Hz]

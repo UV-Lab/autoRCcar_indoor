@@ -9,6 +9,31 @@
 #include <utility>
 #include <vector>
 
+namespace {
+
+double Cross(const Eigen::Vector2d& p0, const Eigen::Vector2d& p1) { return p0.x() * p1.y() - p0.y() * p1.x(); }
+
+bool DoIntersect(const Eigen::Vector2d& p0, const Eigen::Vector2d& p1, const Eigen::Vector2d& q0,
+                 const Eigen::Vector2d& q1) {
+    Eigen::Vector2d r = p1 - p0;
+    Eigen::Vector2d s = q1 - q0;
+
+    Eigen::Vector2d q0p0 = q0 - p0;
+
+    double r_cross_s = Cross(r, s);
+    if (std::abs(r_cross_s) < 1e-9) return false;
+
+    double q0p0_cross_r = Cross(q0p0, r);
+    double q0p0_cross_s = Cross(q0p0, s);
+
+    double t = q0p0_cross_r / r_cross_s;
+    double u = q0p0_cross_s / r_cross_s;
+
+    return (t >= 0 && t <= 1 && u >= 0 && u <= 1);
+}
+
+}  // namespace
+
 namespace autorccar {
 namespace planning_control {
 namespace frenet_optimal_path {
@@ -282,33 +307,30 @@ void FrenetOptimalPath::CalculateGlobalPaths(const std::unique_ptr<CubicSplinePa
 
 void FrenetOptimalPath::CheckPaths() {
     // Check max speed
-    double max_speed = parameters_.max_speed;
     frenet_paths_.erase(std::remove_if(frenet_paths_.begin(), frenet_paths_.end(),
-                                       [max_speed](FrenetPath& fp) {
-                                           for (int i = 0; i < static_cast<int>(fp.d_s.size()); i++) {
-                                               if (fp.d_s.at(i) > max_speed) return true;
+                                       [this](FrenetPath& fp) {
+                                           for (int i = 0; i < static_cast<int>(fp.d_s.size()); ++i) {
+                                               if (fp.d_s.at(i) > parameters_.max_speed) return true;
                                            }
                                            return false;
                                        }),
                         frenet_paths_.end());
 
     // Check max accel
-    double max_accel = parameters_.max_accel;
     frenet_paths_.erase(std::remove_if(frenet_paths_.begin(), frenet_paths_.end(),
-                                       [max_accel](FrenetPath& fp) {
-                                           for (int i = 0; i < static_cast<int>(fp.dd_s.size()); i++) {
-                                               if (fp.dd_s.at(i) > max_accel) return true;
+                                       [this](FrenetPath& fp) {
+                                           for (int i = 0; i < static_cast<int>(fp.dd_s.size()); ++i) {
+                                               if (fp.dd_s.at(i) > parameters_.max_accel) return true;
                                            }
                                            return false;
                                        }),
                         frenet_paths_.end());
 
     // Check max curvature
-    double max_curvature = parameters_.max_curvature;
     frenet_paths_.erase(std::remove_if(frenet_paths_.begin(), frenet_paths_.end(),
-                                       [max_curvature](FrenetPath& fp) {
-                                           for (int i = 0; i < static_cast<int>(fp.c.size()); i++) {
-                                               if (fp.c.at(i) > max_curvature) return true;
+                                       [this](FrenetPath& fp) {
+                                           for (int i = 0; i < static_cast<int>(fp.c.size()); ++i) {
+                                               if (fp.c.at(i) > parameters_.max_curvature) return true;
                                            }
                                            return false;
                                        }),
@@ -317,7 +339,40 @@ void FrenetOptimalPath::CheckPaths() {
 }
 
 void FrenetOptimalPath::CheckCollision() {
-    // TODO(luke7637): add collision check algorithm with cost map
+    if (bounding_boxes_.size() < 1) return;
+
+    frenet_paths_.erase(std::remove_if(frenet_paths_.begin(), frenet_paths_.end(),
+                                       [this](FrenetPath& fp) { return CheckPathCollision(fp.path, bounding_boxes_); }),
+                        frenet_paths_.end());
+}
+
+bool FrenetOptimalPath::CheckPathCollision(const std::vector<Eigen::Vector2d>& path,
+                                           const std::vector<BoundingBox>& bounding_boxes) {
+    if (path.size() < 2) return false;
+
+    auto GetBoxEdges = [](const BoundingBox& bbox) {
+        std::vector<std::pair<Eigen::Vector2d, Eigen::Vector2d>> edges;
+        edges.push_back({Eigen::Vector2d(bbox.x_min, bbox.y_min), Eigen::Vector2d(bbox.x_max, bbox.y_min)});
+        edges.push_back({Eigen::Vector2d(bbox.x_max, bbox.y_min), Eigen::Vector2d(bbox.x_max, bbox.y_max)});
+        edges.push_back({Eigen::Vector2d(bbox.x_max, bbox.y_max), Eigen::Vector2d(bbox.x_min, bbox.y_max)});
+        edges.push_back({Eigen::Vector2d(bbox.x_min, bbox.y_max), Eigen::Vector2d(bbox.x_min, bbox.y_min)});
+        return edges;
+    };
+
+    for (std::size_t i = 0; i < path.size() - 1; ++i) {
+        Eigen::Vector2d p1 = path.at(i);
+        Eigen::Vector2d p2 = path.at(i + 1);
+        for (const auto& bbox : bounding_boxes) {
+            BoundingBox bbox_with_margin{bbox.x_min - parameters_.robot_radius, bbox.x_max + parameters_.robot_radius,
+                                         bbox.y_min - parameters_.robot_radius, bbox.y_max + parameters_.robot_radius};
+            std::vector<std::pair<Eigen::Vector2d, Eigen::Vector2d>> box_edges = GetBoxEdges(bbox_with_margin);
+            for (const auto& edge : box_edges) {
+                if (DoIntersect(p1, p2, edge.first, edge.second)) return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 bool FrenetOptimalPath::IsPathGenerated() { return current_frenet_path_.path.size() >= 2; }
@@ -327,6 +382,10 @@ FrenetPath FrenetOptimalPath::GetCurrentFrenetPath() const {
         return {};
     }
     return current_frenet_path_;
+}
+
+void FrenetOptimalPath::SetBoundingBoxes(std::vector<BoundingBox>&& bounding_boxes) {
+    bounding_boxes_ = std::move(bounding_boxes);
 }
 
 }  // namespace frenet_optimal_path

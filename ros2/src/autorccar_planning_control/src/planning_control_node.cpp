@@ -4,13 +4,13 @@
 #include <utility>
 #include <vector>
 
+#include "autorccar_interfaces/msg/bounding_boxes.hpp"
 #include "autorccar_interfaces/msg/control_command.hpp"
 #include "autorccar_interfaces/msg/nav_state.hpp"
 #include "autorccar_interfaces/msg/path.hpp"
 #include "common.h"
 #include "geometry_msgs/msg/twist.hpp"
 #include "geometry_msgs/msg/vector3.hpp"
-#include "nav_msgs/msg/occupancy_grid.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "nav_msgs/msg/path.hpp"
 #include "planning_control.h"
@@ -55,12 +55,11 @@ class PlanningControlNode : public rclcpp::Node {
         nav_state_subscriber_ =
             create_subscription<autorccar_interfaces::msg::NavState>("nav_topic", 10, nav_state_callback);
 
-        auto occupancy_grid_callback = [this](nav_msgs::msg::OccupancyGrid::UniquePtr msg) {
-            std::cout << "got occupancy grid." << std::endl;
-            this->OccupancyGridCallback(*msg);
+        auto bounding_boxes_callback = [this](autorccar_interfaces::msg::BoundingBoxes::UniquePtr msg) {
+            this->BoundingBoxesCallback(*msg);
         };
-        occupancy_grid_subscriber_ =
-            create_subscription<nav_msgs::msg::OccupancyGrid>("occupancy_grid/local", 10, occupancy_grid_callback);
+        bounding_boxes_subscriber_ = create_subscription<autorccar_interfaces::msg::BoundingBoxes>(
+            "bounding_boxes", 10, bounding_boxes_callback);
 
         auto global_path_callback = [this](autorccar_interfaces::msg::Path::UniquePtr msg) {
             this->GlobalPathCallback(*msg);
@@ -123,7 +122,20 @@ class PlanningControlNode : public rclcpp::Node {
         VisualizeLocalPath(planning_controller_->GetCurrentLocalPath());
     }
 
-    void OccupancyGridCallback(const nav_msgs::msg::OccupancyGrid& /*msg*/) { planning_controller_->PlanOnce(); }
+    void BoundingBoxesCallback(const autorccar_interfaces::msg::BoundingBoxes& msg) {
+        std::vector<autorccar::planning_control::common::BoundingBox> bboxes;
+        bboxes.reserve(msg.bounding_boxes.size());
+        for (const auto& bbox : msg.bounding_boxes) {
+            autorccar::planning_control::common::BoundingBox bounding_box;
+            bounding_box.x_min = bbox.center.position.x - (bbox.size_x / 2.0);
+            bounding_box.x_max = bbox.center.position.x + (bbox.size_x / 2.0);
+            bounding_box.y_min = bbox.center.position.y - (bbox.size_y / 2.0);
+            bounding_box.y_max = bbox.center.position.y + (bbox.size_y / 2.0);
+            bboxes.push_back(bounding_box);
+        }
+        planning_controller_->SetBoundingBoxes(std::move(bboxes));
+        planning_controller_->PlanOnce();
+    }
 
     void GenerateControlCommand(const autorccar_interfaces::msg::NavState& msg) const {
         autorccar::planning_control::common::State state;
@@ -328,7 +340,7 @@ class PlanningControlNode : public rclcpp::Node {
 
     // subscriber
     rclcpp::Subscription<autorccar_interfaces::msg::NavState>::SharedPtr nav_state_subscriber_;
-    rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr occupancy_grid_subscriber_;
+    rclcpp::Subscription<autorccar_interfaces::msg::BoundingBoxes>::SharedPtr bounding_boxes_subscriber_;
     rclcpp::Subscription<autorccar_interfaces::msg::Path>::SharedPtr global_path_subscriber_;
 
     // variables

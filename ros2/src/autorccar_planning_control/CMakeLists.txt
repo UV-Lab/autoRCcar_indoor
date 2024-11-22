@@ -56,6 +56,7 @@ ament_target_dependencies(simulator_node
   rclcpp 
   std_msgs
   geometry_msgs
+  visualization_msgs
   autorccar_interfaces
   Eigen3
 )
