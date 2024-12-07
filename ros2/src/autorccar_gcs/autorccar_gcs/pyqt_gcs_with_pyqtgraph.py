@@ -15,9 +15,8 @@ import array
 import numpy as np
 import math
 import copy
-from submodules.user_geometry import *
-from submodules.cubic_spline import *
-
+from .submodules.user_geometry import *
+from .submodules.cubic_spline import *
 
 forceQuit = False
 start_coord = [0, 0]
