@@ -65,7 +65,7 @@ class Costmap {
     Eigen::MatrixXd global_costmap_;
     Eigen::Vector2i global_size_ = Eigen::Vector2i::Zero();    // number of cell
     Eigen::Vector2i global_center_ = Eigen::Vector2i::Zero();  // origin cell index
-    double resolution_;                                        // costmap resolution [m/cell]
+    double resolution_ = 0.0;                                  // costmap resolution [m/cell]
     
     // local costmap
     struct CostmapInfo local_costmap_info_;
