@@ -160,12 +160,18 @@ FrenetOptimalPath::FrenetOptimalPath(const Parameters& parameters) : parameters_
 }
 
 void FrenetOptimalPath::Planning(const std::unique_ptr<CubicSplinePath>& global_path, const State& current_state) {
-    FrenetState current_frenet_state = ComputeCurrentFrenetState(global_path, current_state);
+    FrenetState current_frenet_state{ComputeCurrentFrenetState(global_path, current_state)};
     CalculateFrenetPaths(current_frenet_state);
     CalculateGlobalPaths(global_path);
     CheckPaths();
 
-    double min_cost = frenet_paths_.at(0).cf;
+    if (frenet_paths_.empty()) {
+        current_frenet_path_ = {};
+        return;
+    }
+
+    current_frenet_path_ = frenet_paths_.at(0);
+    double min_cost{current_frenet_path_.cf};
     for (size_t i = 1; i < frenet_paths_.size(); i++) {
         if (min_cost >= frenet_paths_.at(i).cf) {
             min_cost = frenet_paths_.at(i).cf;
