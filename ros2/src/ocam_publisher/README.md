@@ -13,9 +13,9 @@ sudo apt-get install libv4l-dev libudev-dev libopencv-dev
 
 # Run
 ```
-ros2 run ocam ocam_node
-ros2 launch ocam ocam.launch.py
-ros2 launch ocam ocam_rviz.launch.py
+ros2 run ocam_publisher ocam_node
+ros2 launch ocam_publisher ocam.launch.py
+ros2 launch ocam_publisher ocam_rviz.launch.py
 ```
 
 # Appendix

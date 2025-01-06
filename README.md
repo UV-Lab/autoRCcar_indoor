@@ -11,7 +11,7 @@ Run `build_ros2.sh` for the first build. It correctly builds the Livox package.
 
 ## Launch
 ```bash
-ros2 launch ocam ocam.launch.py
+ros2 launch ocam_publisher ocam.launch.py
 
 ros2 launch livox_ros_driver2 msg_MID360_launch.py
 
