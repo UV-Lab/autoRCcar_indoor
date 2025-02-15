@@ -183,10 +183,10 @@ void FrenetOptimalPath::Planning(const std::unique_ptr<CubicSplinePath>& global_
 FrenetState FrenetOptimalPath::ComputeCurrentFrenetState(const std::unique_ptr<CubicSplinePath>& global_path,
                                                          const State& current_state) const {
     FrenetState current_frenet_state;
-    current_frenet_state.speed = current_state.vel.x();
-    current_frenet_state.accel = current_state.accel.x();
-    current_frenet_state.lateral_speed = current_state.vel.y();
-    current_frenet_state.lateral_accel = current_state.accel.y();
+    current_frenet_state.speed = 1.0;
+    current_frenet_state.accel = 0.0;
+    current_frenet_state.lateral_speed = 0.0;
+    current_frenet_state.lateral_accel = 0.0;
 
     Point current_pos{current_state.pos.x(), current_state.pos.y()};
     Reference path_ref = global_path->ReferencePoint(current_pos);
