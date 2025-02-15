@@ -23,6 +23,5 @@ ros2 launch autorccar_hardware_control hardware_control.launch.py
 
 ros2 launch autorccar_costmap costmap.launch.py
 
-cd ros2/src/autorccar_gcs/autorccar_gcs
-python pyqt_gcs_with_pyqtgraph.py
+ros2 launch autorccar_gcs autorccar_gcs.launch.py
 ```
