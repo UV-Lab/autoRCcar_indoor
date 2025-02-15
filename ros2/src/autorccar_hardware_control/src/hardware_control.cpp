@@ -32,8 +32,9 @@ ControlCommand HardwareControl::SendControlCommand(ControlCommand& control_comma
     control_command.steering_angle =
         std::clamp(control_command.steering_angle, -parameters_.max_steering_angle, parameters_.max_steering_angle);
 
+    control_command.speed += 0.5;
     Pwm control_pwm = ConvertCommandToPwm(control_command);
-
+    
     control_pwm.speed = std::clamp(control_pwm.speed, kEscPwmMin, kEscPwmMax);
     control_pwm.steering = std::clamp(control_pwm.steering, kSteerPwmMin, kSteerPwmMax);
 
@@ -86,16 +87,23 @@ Pwm HardwareControl::ConvertCommandToPwm(const ControlCommand& control_command) 
 }
 
 int HardwareControl::SerializeAndSendMessage(const Pwm& pwm) const {
-    char msg_tx[8];
-
-    msg_tx[0] = static_cast<char>(0xFF);  // header
-    msg_tx[1] = static_cast<char>(0xFE);  // header
+    unsigned char msg_tx[8];
+   
+    msg_tx[0] = static_cast<unsigned char>(0xFF);  // header
+    msg_tx[1] = static_cast<unsigned char>(0xFE);  // header
     msg_tx[2] = (pwm.steering >> 8) & 0xFF;
     msg_tx[3] = pwm.steering & 0xFF;
     msg_tx[4] = (pwm.speed >> 8) & 0xFF;
     msg_tx[5] = pwm.speed & 0xFF;
     msg_tx[6] = (static_cast<int>(drive_command_) >> 8) & 0xFF;
     msg_tx[7] = static_cast<int>(drive_command_) & 0xFF;
+
+    std::cout << static_cast<int>(drive_command_) <<", " << pwm.steering << ", " << pwm.speed << std::endl;
+    // std::cout << "hex : ";
+    // for (int i=0; i<8; ++i)
+    //     std::cout << std::hex << static_cast<int>(msg_tx[i]) << " ";
+    // std::cout << std::dec << std::endl;
+
     return write(file_descriptor_, msg_tx, sizeof(msg_tx));
 }
 
