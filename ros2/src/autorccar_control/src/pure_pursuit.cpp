@@ -185,7 +185,7 @@ void pure_pursuit::uart_tx(const int fd, rclcpp::Publisher<geometry_msgs::msg::V
     geometry_msgs::msg::Vector3 pub_msg;
 
     double conStr, conVel, newVel;
-    char msg[8];
+    uint8_t msg[9]; // 헤더(2) + 데이터(2*3) + 체크섬(1)
     double sf = -1.5;
     
     double fa = 206.0306;
@@ -220,14 +220,26 @@ void pure_pursuit::uart_tx(const int fd, rclcpp::Publisher<geometry_msgs::msg::V
     if (conVel <= ESC_PWM_MIN)
         conVel = ESC_PWM_MIN;
 
-    msg[0] = 0xff; // header
-    msg[1] = 0xfe; // header
-    msg[2] = ((int)conStr >> 8) & 0xff;
-    msg[3] = (int)conStr & 0xff;
-    msg[4] = ((int)conVel >> 8) & 0xff;
-    msg[5] = (int)conVel & 0xff;
-    msg[6] = ((int)command >> 8) & 0xff;
-    msg[7] = (int)command & 0xff;
+    // 안전한 전송을 위한 구조
+    int16_t s_conStr = (int16_t)conStr;
+    int16_t s_conVel = (int16_t)conVel;
+    int16_t s_command = (int16_t)command;
+
+    msg[0] = 0xFF;
+    msg[1] = 0xFE;
+    msg[2] = (s_conStr >> 8) & 0xFF;
+    msg[3] = s_conStr & 0xFF;
+    msg[4] = (s_conVel >> 8) & 0xFF;
+    msg[5] = s_conVel & 0xFF;
+    msg[6] = (s_command >> 8) & 0xFF;
+    msg[7] = (s_command & 0xFF) ;
+
+    // 간단한 체크섬 추가 (2~7번 인덱스 합산)
+    uint8_t checksum = 0;
+    for(int i=2; i<8; i++) checksum += msg[i];
+    msg[8] = checksum;
+
+    write(fd, msg, sizeof(msg));
 
 
     int cnt = write(fd, msg, sizeof(msg));
