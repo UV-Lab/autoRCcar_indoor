@@ -101,6 +101,34 @@ install(
 
 ament_export_include_directories(include)
 
+set(grid_map_dir "src/grid_map")
+file(GLOB_RECURSE grid_map_srcs 
+  ${grid_map_dir}/*.cpp
+  ${grid_map_dir}/*.h)
+
+
+add_executable(transform_global_map
+  src/TransformGlobalMap.cpp
+  ${grid_map_srcs}
+)
+ament_target_dependencies(transform_global_map sensor_msgs Eigen OpenCV PCL livox_ros_driver2)
+target_link_libraries(transform_global_map stdc++fs)
+install(
+  TARGETS transform_global_map
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+add_executable(grid_map_builder
+  src/GridMapBuilder.cpp
+  ${grid_map_srcs}
+)
+ament_target_dependencies(grid_map_builder sensor_msgs rclcpp nav_msgs pcl_conversions pcl_msgs  visualization_msgs tf2 tf2_ros tf2_eigen tf2_sensor_msgs tf2_geometry_msgs livox_ros_driver2 Eigen OpenCV PCL)
+target_link_libraries(grid_map_builder stdc++fs)
+install(
+  TARGETS grid_map_builder
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights

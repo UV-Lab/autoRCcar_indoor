@@ -192,6 +192,21 @@ public:
     {
         sensor_msgs::msg::Imu thisImu = imuConverter(*imuMsg);
 
+        Eigen::Vector3f lidar_acc(thisImu.linear_acceleration.x,
+                                  thisImu.linear_acceleration.y,
+                                  thisImu.linear_acceleration.z);
+        Eigen::Vector3f base_acc = rotBaseLidar * lidar_acc;
+        thisImu.linear_acceleration.x = base_acc.x();
+        thisImu.linear_acceleration.y = base_acc.y();
+        thisImu.linear_acceleration.z = base_acc.z();
+        Eigen::Vector3f lidar_gyro(thisImu.angular_velocity.x,
+                                   thisImu.angular_velocity.y,
+                                   thisImu.angular_velocity.z);
+        Eigen::Vector3f base_gyro = rotBaseLidar * lidar_gyro;
+        thisImu.angular_velocity.x = base_gyro.x();
+        thisImu.angular_velocity.y = base_gyro.y();
+        thisImu.angular_velocity.z = base_gyro.z();
+
         std::lock_guard<std::mutex> lock1(imuLock);
         imuQueue.push_back(thisImu);
 
@@ -263,6 +278,16 @@ public:
     {
         // cache point cloud
         cloudQueue.push_back(*laserCloudMsg);
+
+        auto &curCloudMsg = cloudQueue.back();
+        for (auto &pnt : curCloudMsg.points) {
+            Eigen::Vector4f lidar_pnt(pnt.x, pnt.y, pnt.z, 1.0);
+            Eigen::Vector4f base_pnt = tfBaseLidar * lidar_pnt;
+            pnt.x = base_pnt.x();
+            pnt.y = base_pnt.y();
+            pnt.z = base_pnt.z();
+        }
+
         if (cloudQueue.size() <= 2)
             return false;
 

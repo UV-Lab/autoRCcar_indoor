@@ -474,6 +474,21 @@ class IMUPreintegration : public ParamServer {
 
         sensor_msgs::msg::Imu thisImu = imuConverter(*imu_raw);
 
+        Eigen::Vector3f lidar_acc(thisImu.linear_acceleration.x,
+                                  thisImu.linear_acceleration.y,
+                                  thisImu.linear_acceleration.z);
+        Eigen::Vector3f base_acc = rotBaseLidar * lidar_acc;
+        thisImu.linear_acceleration.x = base_acc.x();
+        thisImu.linear_acceleration.y = base_acc.y();
+        thisImu.linear_acceleration.z = base_acc.z();
+        Eigen::Vector3f lidar_gyro(thisImu.angular_velocity.x,
+                                   thisImu.angular_velocity.y,
+                                   thisImu.angular_velocity.z);
+        Eigen::Vector3f base_gyro = rotBaseLidar * lidar_gyro;
+        thisImu.angular_velocity.x = base_gyro.x();
+        thisImu.angular_velocity.y = base_gyro.y();
+        thisImu.angular_velocity.z = base_gyro.z();
+        
         imuQueOpt.push_back(thisImu);
         imuQueImu.push_back(thisImu);
 

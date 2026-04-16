@@ -153,6 +153,12 @@ public:
     float globalMapVisualizationPoseDensity;
     float globalMapVisualizationLeafSize;
 
+
+    bool isSaveKeyFrames = true;
+    bool isSaveTrajectory = false;
+    Eigen::Matrix4f tfBaseLidar;
+    Eigen::Matrix3f rotBaseLidar;
+
     ParamServer(std::string node_name, const rclcpp::NodeOptions & options) : Node(node_name, options)
     {
         declare_parameter("pointCloudTopic", "points");
@@ -309,6 +315,24 @@ public:
         declare_parameter("globalMapVisualizationLeafSize", 1.0);
         get_parameter("globalMapVisualizationLeafSize", globalMapVisualizationLeafSize);
 
+
+        
+        declare_parameter("isSaveKeyFrames", true);
+        get_parameter("isSaveKeyFrames", isSaveKeyFrames);
+        
+        std::vector<float> tfBaseLidarV = {0.991114, 0.0175537,  0.131854,         0,
+                         0,  0.991254, -0.131966,         0,
+                 -0.133017,  0.130793,  0.982446,         0,
+                         0,         0,         0,         1};
+        tfBaseLidar = Eigen::Map<const Eigen::Matrix<float, -1, -1, Eigen::RowMajor>>(tfBaseLidarV.data(), 4, 4);
+        rotBaseLidar = tfBaseLidar.block(0, 0, 3, 3);
+        cout << "tfBaseLidar:" << tfBaseLidar << endl;
+        cout << "rotBaseLidar:" << rotBaseLidar << endl;
+
+        Eigen::Quaternionf quat_vl_l(rotBaseLidar);
+                cout << "quat_vl_l_wxyz"
+                << "[" << quat_vl_l.w() << " "<<  quat_vl_l.x()
+                << " "<<  quat_vl_l.y() << " "<<  quat_vl_l.z() << "]" << endl;
         usleep(100);
     }
 
