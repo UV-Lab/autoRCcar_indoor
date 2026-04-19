@@ -1,0 +1,158 @@
+# %YAML:1.0
+
+logger: 
+  log_path: "/opt/robot/log/msf_loc_log/"
+  log_name: "msf_loc_log"
+  log_prefix: "msf_loc_log_"
+  single_log_max_size_MB: 10
+  log_max_cnt: 50
+  # trace:0, debug:1, info:2, warn:3, error:4, critical:5, off:6
+  log_level_num: 2
+  is_asyn_log: true
+  log_queue_size: 8192
+  log_thread_cnt: 4
+  is_console_log: true
+
+msf_loc_module:
+  map_manager:
+    global_map_path: "/home/robot-nav/nav_data/loc_map/split_map"
+    global_map_frame_id: "map"
+    global_map_resolution: 0.3
+    local_map_resolution: 0.2
+    # the margin size of every submap grid.
+    sub_map_update_margin: 5.0
+    # other params of map manager.
+  ndt:  
+    # ndt_type: "omp_ndt", "gao_ndt"
+    ndt_type: "gao_ndt"
+    omp_ndt:
+      ndt_epsilon: 0.01
+      ndt_resolution: 1.0
+      # avaliable search method: DIRECT1, DIRECT7, KDTREE
+      ndt_neighbor_search_method: "DIRECT7"
+      ndt_neighbor_search_radius: 2.0
+    gao_ndt: 
+      max_iteration: 20               # Maximum number of iterations
+      voxel_size: 2.0                 # Voxel size in meters
+      # inv_voxel_size: 1.0           # Inverse of voxel size
+      min_effective_pts: 10           # Minimum effective points threshold
+      min_pts_in_voxel: 3            # Minimum points per voxel
+      max_pts_in_voxel: 5000           # Maximum points per voxel
+      eps: 0.01                       # Convergence threshold (1e-2)
+      res_outlier_th: 20.0            # Residual outlier threshold
+      nearby_type: "NEARBY6"          # Nearby grid search type: CENTER or NEARBY6
+      remove_centroid: false           # Whether to calculate and remove point cloud centroids
+      # capacity: 100000                # Capacity for incremental NDT
+  auto_init_loc:
+    scan_context:
+      lidar_height: 1.4
+      pc_num_ring: 40
+      pc_num_sector: 120
+      pc_max_radius: 80
+      pc_sector_angle_range_deg: 360.0
+      num_candidates: 10
+      search_ratio: 0.1 
+      sc_dist_thres: 0.4
+    icp:
+      icp_max_correspondence_distance: 150.0
+      icp_max_iterations: 100
+      icp_transformation_epsilon: 1e-6
+      icp_euclidean_fitness_epsilon: 1e-6
+      icp_ransac_iterations: 0
+    voxel_grid: 
+      leaf_size: 0.2
+    icp_fitness_score_thres: 0.4
+      
+
+  msf_loc:
+    reg_score_th: 0.6
+    downsample_voxel_size: 0.2
+    init_imu_movement_th: 0.05
+    init_imu_cnt: 10
+    slide_win_size: 100
+    loc_confidence_th: 40.0
+    imu_sensor_params:
+      gravity: 9.80511
+      gravity_in_map_frame: [0.0, 0.0, -9.80511]
+      accel_sigma: 1e-3
+      gyro_sigma: 1e-3
+      accel_bias_sigma: 1e-5
+      gyro_bias_sigma: 1e-5
+    preintegration_params: 
+      correction_noise_pos: 0.05
+      correction_noise_rot: 0.1
+      integration_cov: 1e-8
+      prior_pose_noise: 1e-2
+      prior_vel_noise: 1e-1
+      prior_bias_noise: 1e-3
+    isam_params:
+      relinearize_th: 0.1
+      relinearize_skip: 1
+
+rob_intrinsic:
+  tf_lidar_imu:
+    trans_xyz: [-0.011, -0.02329, 0.04412]
+    quat_wxyz: [1.0, 0.0, 0.0, 0.0]
+  tf_base_lidar:
+    trans_xyz: [0.0, 0.0, 0.0]
+    quat_wxyz: [1.0, 0.0, 0.0, 0.0]
+  tf_footprint_base:
+    trans_xyz: [0.0, 0.0, 0.0]
+    quat_wxyz: [1.0, 0.0, 0.0, 0.0]
+
+app_params:
+  # use the rosbag or real sensor.
+  is_used_rosbag: false
+
+node_params:
+  msf_loc_node:
+    is_ipc_used: true
+    topic_name:
+      # NOTE: the lidar cloud topic name, if use the rosbag, remove the postfix "_2"
+      lidar_cloud_topic_name: "/livox/lidar_2"
+      # NOTE: the imu topic name, if use the rosbag, remove the postfix "_2"
+      imu_topic_name: "/livox/imu_2"
+      wheel_odom_topic_name: "/odom"
+      global_map_topic_name: "/global_map"
+      local_map_topic_name: "/local_map"
+      aligned_cloud_topic_name: "/aligned_cloud"
+      robot_pose_topic_name: "robot_pose"
+      robot_pose_hf_topic_name: "robot_pose_hq"
+      loc_map_range_topic_name: "loc_map_range"
+      loc_module_state_topic_name: "msf_loc_module_state"
+      loc_module_nav_state_topic_name: "nav_module_state"
+      robot_loc_info_odom_topic_name: "nav_loc_info_odom"
+    frame_id_set:
+      lidar_frame_id: "laser_link"
+      imu_frame_id: "imu_link"
+      base_frame_id: "base_link"
+      odom_frame_id: "odom"
+    msf_loc_op_srv_name: "msf_loc_op"
+    robot_pose_hf_topic_hz: 30
+    msf_loc_module_state_topic_hz: 10.0
+    imu_accel_factor: 9.80511
+    pub_tf_tree: true
+    # the resolution of the point cloud msg. usde for downsample.
+    cloud_msg_resolution: 2.0
+    lidar_cloud_line_interval: 1
+  sensor_recv_node:
+    # TODO: add the params later.
+    some_val: 0.0
+  rosbag_node:
+    is_ipc_used: true
+    topic_name:
+      lidar_data: "/livox/lidar"
+      imu_data: "/livox/imu"
+      image_data: "/usb_cam/image_raw"
+    is_used_bag_time: true
+    bag_op_srv_name: "bag_reader_srv"
+  sensor_msg_node:
+    is_ipc_used: true
+    shm_topic_name:
+      lidar_data: "livox_custom_cloud"
+      imu_data: "livox_imu_msg"
+    topic_name:
+      lidar_data: "/livox/lidar_2"
+      imu_data: "/livox/imu_2"
+    node_op_srv_name: "sensor_msg_node_op"
+

@@ -1,0 +1,200 @@
+syntax = "proto3";
+
+package gemoetry_msgs;
+
+option optimize_for = LITE_RUNTIME;
+
+import "robot_base/std_msgs.proto";
+
+/*
+This represents a vector in free space.
+It is only meant to represent a direction. Therefore, it does not
+make sense to apply a translation to it (e.g., when applying a
+generic rigid transformation to a Vector3, tf2 will only apply the
+rotation). If you want your data to be translatable too, use the
+geometry_msgs/Point message instead.
+*/
+message Vector3 {
+    float x = 1;
+    float y = 2;
+    float z = 3;
+}
+
+/*
+This represents a Vector3 with reference coordinate frame and timestamp
+*/
+message Vector3Stamped {
+    std_msgs.Header header = 1;
+    Vector3 vector = 2;
+}
+
+/*
+This represents force in free space, separated into
+its linear and angular parts.
+*/
+message Wrench {
+    Vector3 force = 1;
+    Vector3 torque = 2;
+}
+
+/*
+A wrench with reference coordinate frame and timestamp
+*/
+message WrenchStamped {
+    std_msgs.Header header = 1;
+    Wrench wrench = 2;
+}
+
+/*
+This expresses acceleration in free space broken into its linear and angular parts.
+*/
+message Accel {
+    Vector3 linear = 1;
+    Vector3 angular = 2;
+}
+
+/*
+An accel with reference coordinate frame and timestamp
+*/
+message AccelStamped {
+    std_msgs.Header header = 1;
+    Accel accel = 2;
+}
+
+// This expresses acceleration in free space with uncertainty.
+message AccelWithCovariance {
+    Accel accel = 1;
+    /*
+    Row-major representation of the 6x6 covariance matrix
+    The orientation parameters use a fixed-axis representation.
+    In order, the parameters are:
+    (x, y, z, rotation about X axis, rotation about Y axis, rotation about Z axis)
+    */
+    repeated float covariance = 2;
+}
+
+// This represents an estimated accel with reference coordinate frame and timestamp.
+message AccelWithCovarianceStamped {
+    std_msgs.Header header = 1;
+    AccelWithCovariance accel = 2;
+}
+
+// This contains the position of a point in free space
+message Point {
+    float x = 1;
+    float y = 2;
+    float z = 3;
+}
+
+// This represents a Point with reference coordinate frame and timestamp
+message PointStamped {
+    std_msgs.Header header = 1;
+    Point point = 2;
+}
+
+// A representation of pose in free space, composed of position and orientation. 
+message Pose {
+    Point position = 1;
+    Quaternion orientation = 2;
+}
+
+// The pose in 2D space.
+message Pose2D {
+    float x = 1;
+    float y = 2;
+    float theta = 3;
+}
+
+// An array of poses with a header for global reference.
+message PoseArray {
+    std_msgs.Header header = 1;
+    repeated Pose poses = 2;
+}
+
+// A Pose with reference coordinate frame and timestamp
+message PoseStamped {
+    std_msgs.Header header = 1;
+    Pose pose = 2;
+}
+
+// This represents a pose in free space with uncertainty.
+message PoseWithCovariance {
+    Pose pose = 1;
+    /*
+    Row-major representation of the 6x6 covariance matrix
+    The orientation parameters use a fixed-axis representation.
+    In order, the parameters are:
+    (x, y, z, rotation about X axis, rotation about Y axis, rotation about Z axis)
+    */
+    repeated float covariance = 2;
+}
+
+// This expresses an estimated pose with a reference coordinate frame and timestamp
+message PoseWithCovarianceStamped {
+    std_msgs.Header header = 1;
+    PoseWithCovariance pose = 2;
+}
+
+// This represents an orientation in free space in quaternion form.
+message Quaternion {
+    float x = 1;
+    float y = 2;
+    float z = 3;
+    float w = 4;
+}
+
+// This represents an orientation with reference coordinate frame and timestamp.
+message QuaternionStamped {
+    std_msgs.Header header = 1;
+    Quaternion quaternion = 2;
+}
+
+// This represents the transform between two coordinate frames in free space.
+message Transform {
+    Vector3 translation = 1;
+    Quaternion rotation = 2;
+}
+
+/*
+This expresses a transform from coordinate frame header.frame_id
+to the coordinate frame child_frame_id
+This message is mostly used by the 
+tf package. 
+See its documentation for more information.
+*/
+message TransformStamped {
+    std_msgs.Header header = 1;
+    // the frame id of the child frame
+    string chile_frame_id = 2;
+    Transform transform = 3;
+}
+
+// This expresses velocity in free space broken into its linear and angular parts.
+message Twist {
+    Vector3 linear = 1;
+    Vector3 angular = 2;
+}
+
+// A twist with reference coordinate frame and timestamp
+message TwistStamped {
+    std_msgs.Header header = 1;
+    Twist twist = 2;
+}
+
+// This expresses velocity in free space with uncertainty.
+message TwistWithCovariance {
+    Twist twist = 1;
+    /*
+    Row-major representation of the 6x6 covariance matrix
+    The orientation parameters use a fixed-axis representation.
+    In order, the parameters are:
+    (x, y, z, rotation about X axis, rotation about Y axis, rotation about Z axis)
+    */
+    repeated float covariance = 2;
+}
+
+// This represents an estimated twist with reference coordinate frame and timestamp.
+message TwistWithCovarianceStamped {
+    std_msgs.Header header = 1;
+    TwistWithCovariance twist = 2;
+}

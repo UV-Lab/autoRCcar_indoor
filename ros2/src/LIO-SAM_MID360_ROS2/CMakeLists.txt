@@ -129,6 +129,73 @@ install(
   DESTINATION lib/${PROJECT_NAME}
 )
 
+
+# --- 3.  ---
+# find the package of nav_common.
+message(STATUS "---------------------------------------------")
+message(STATUS "CMake 路径调试信息：")
+message(STATUS "PROJECT_SOURCE_DIR       = ${PROJECT_SOURCE_DIR}")
+message(STATUS "CMAKE_SOURCE_DIR         = ${CMAKE_SOURCE_DIR}")
+message(STATUS "CMAKE_BINARY_DIR         = ${CMAKE_BINARY_DIR}")
+message(STATUS "CMAKE_CURRENT_SOURCE_DIR = ${CMAKE_CURRENT_SOURCE_DIR}")
+
+find_package(rob_common REQUIRED PATHS ${PROJECT_SOURCE_DIR}/../../install/rob_common/share/rob_common/cmake)
+include_directories(${rob_common_INCLUDE_DIRS})
+set(rob_common_lib_dir ${rob_common_DIR}/../../../lib)
+
+message(STATUS "rob_common_lib_dir = ${rob_common_lib_dir}")
+find_package(iceoryx_posh CONFIG REQUIRED)
+find_package(iceoryx_hoofs CONFIG REQUIRED)
+set(rob_com_libs
+  ${rob_common_lib_dir}/libjson_11_lib.a  
+  ${rob_common_lib_dir}/libnanomsg.so  
+  ${rob_common_lib_dir}/libnanomsg.so.5  
+  ${rob_common_lib_dir}/libnanomsg.so.5.1.0  
+  ${rob_common_lib_dir}/librob_common.a  
+  # ${rob_common_lib_dir}/libspdlog.a  
+  spdlog::spdlog stdc++fs
+  ${rob_common_lib_dir}/libyaml-cpp.a
+  iceoryx_posh::iceoryx_posh iceoryx_hoofs::iceoryx_hoofs
+)
+link_libraries(stdc++fs)
+
+
+
+
+# msf_loc lib
+include_directories(${PROJECT_SOURCE_DIR}/src/scan_context)
+set(msf_loc_dir ${PROJECT_SOURCE_DIR}/src/scan_context)
+file(GLOB_RECURSE msf_loc_files
+  ${msf_loc_dir}/*.cpp
+  ${msf_loc_dir}/*.h
+)
+add_library(msf_loc_lib SHARED ${msf_loc_files})
+target_link_libraries(msf_loc_lib 
+${rob_com_libs} 
+${PCL_LIBRARIES} 
+${OpenCV_LIBS}
+)
+install(TARGETS
+  msf_loc_lib
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+add_executable(slam_map_post_processing
+  src/SlamMapPostProcessingMain.cpp
+  src/map_splitter/MapSplitter.cpp
+)
+target_link_libraries(slam_map_post_processing
+  ${PCL_LIBRARIES}
+  ${rob_com_libs}
+  msf_loc_lib
+)
+install(
+  TARGETS slam_map_post_processing
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+message(STATUS "---------------------------------------------")
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights

@@ -1,0 +1,35 @@
+{
+    "code": 1,
+    "weight": 50.1,
+    "data": [
+        "aa",
+        "bb",
+        "cc"
+    ],
+    "num_data": [
+        10,
+        20,
+        30
+    ],
+    "bool_arr": [
+        true,
+        false,
+        true
+    ],
+    "real_data": [
+        10.2,
+        30.1,
+        40.3
+    ],
+    "empty_arr": [],
+    "flag": true,
+    "msg": "success",
+    "person": {
+        "name": "Tom",
+        "age": 10
+    },
+    "data_2": {
+        "name": "jack",
+        "age": 28
+    }
+}

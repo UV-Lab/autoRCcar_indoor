@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package std_msgs;
+
+option optimize_for = LITE_RUNTIME;
+
+message TimeStamp {
+    // The second part of timestamp.
+    int32 secs = 1;
+    // The nanosecond part of timestamp.
+    uint64 nanos = 2;
+}
+
+// Message header.
+message Header {
+    // The timestamp of message.
+    TimeStamp stamp = 1;
+    // The name or ID of frame.
+    string frame_id = 2;
+}
