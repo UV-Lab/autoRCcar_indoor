@@ -9,3 +9,4 @@ projects/autoRCcar_rl/autoRCcar_gym.egg-info
 projects/autoRCcar_rl/train/model
 projects/autoRCcar_rl/train/log
 projects/autoRCcar_rl/test/.ipynb_checkpoints
+temp

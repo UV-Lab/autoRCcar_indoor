@@ -20,6 +20,10 @@
 #include <pcl/io/ply_io.h>
 #include <pcl/point_types.h>
 
+
+#include <planeFitting/planeFittingProcess.h>
+
+
 using namespace gtsam;
 
 using symbol_shorthand::X; // Pose3 (x,y,z,r,p,y)
@@ -155,6 +159,8 @@ public:
 
     std::unique_ptr<tf2_ros::TransformBroadcaster> br;
 
+    std::unique_ptr<gac::lio_sam::PlaneFittingProcess> planeFittingProcess_ = std::make_unique<gac::lio_sam::PlaneFittingProcess>();
+
     /** gps */
     // first gps position.？？
     //nav_msgs::OdometryPtr firstGpsOdomMsgPtr = nullptr;
@@ -199,6 +205,41 @@ public:
             std::string pointCloudDirectory = saveMapDirectory + "/pointCloud";
             unused = system((std::string("mkdir -p ") + pointCloudDirectory).c_str());
 
+
+            std::cout << "Performing plane fitting for map optimization..." << std::endl;
+            bool planeFittingFlag = planeFittingProcess_->Process(cloudKeyPoses3D);
+            if (!planeFittingFlag){
+                cout << "planeFittingFlag failed.\n"; 
+                return;
+            }
+
+
+            if (!planeFittingProcess_->ExportPlaneFittingResult(saveMapDirectory)){
+                cout << "ExportPlaneFittingResult failed.\n"; 
+                return;
+            }
+
+
+            // pcl::PointCloud<PointType>::Ptr refinedCloudKeyPoses3D(new pcl::PointCloud<PointType>());
+            // pcl::transformPointCloud(*cloudKeyPoses3D, *refinedCloudKeyPoses3D, planeFittingRotation);
+            // for (auto &pose : cloudKeyPoses6D->points)
+            // {
+            //     Eigen::Affine3f poseTransform = pcl::getTransformation(
+            //         pose.x, pose.y, pose.z, pose.roll, pose.pitch, pose.yaw);
+            //     Eigen::Affine3f refinedPoseTransform(planeFittingRotation * poseTransform.matrix());
+
+            //     pcl::getTranslationAndEulerAngles(
+            //         refinedPoseTransform,
+            //         pose.x,
+            //         pose.y,
+            //         pose.z,
+            //         pose.roll,
+            //         pose.pitch,
+            //         pose.yaw);
+            // }
+            
+            
+            
             // save key frame transformations
             pcl::io::savePLYFileBinary(saveMapDirectory + "/trajectory.ply", *cloudKeyPoses3D);
             pcl::io::savePLYFileBinary(saveMapDirectory + "/transformations.ply", *cloudKeyPoses6D);
@@ -218,12 +259,12 @@ public:
             {
                cout << "\n\nSave resolution: " << req->resolution << endl;
                // down-sample and save corner cloud
-               downSizeFilterCorner.setInputCloud(globalCornerCloud);
+                    downSizeFilterCorner.setInputCloud(globalCornerCloud);
                downSizeFilterCorner.setLeafSize(req->resolution, req->resolution, req->resolution);
                downSizeFilterCorner.filter(*globalCornerCloudDS);
                pcl::io::savePLYFileBinary(saveMapDirectory + "/CornerMap.ply", *globalCornerCloudDS);
                // down-sample and save surf cloud
-               downSizeFilterSurf.setInputCloud(globalSurfCloud);
+                    downSizeFilterSurf.setInputCloud(globalSurfCloud);
                downSizeFilterSurf.setLeafSize(req->resolution, req->resolution, req->resolution);
                downSizeFilterSurf.filter(*globalSurfCloudDS);
                pcl::io::savePLYFileBinary(saveMapDirectory + "/SurfMap.ply", *globalSurfCloudDS);
@@ -231,13 +272,13 @@ public:
             else
             {
             // save corner cloud
-               pcl::io::savePLYFileBinary(saveMapDirectory + "/CornerMap.ply", *globalCornerCloud);
+                    pcl::io::savePLYFileBinary(saveMapDirectory + "/CornerMap.ply", *globalCornerCloud);
                // save surf cloud
-               pcl::io::savePLYFileBinary(saveMapDirectory + "/SurfMap.ply", *globalSurfCloud);
+                    pcl::io::savePLYFileBinary(saveMapDirectory + "/SurfMap.ply", *globalSurfCloud);
             }
             // save global point cloud map
-            *globalMapCloud += *globalCornerCloud;
-            *globalMapCloud += *globalSurfCloud;
+                *globalMapCloud += *globalCornerCloud;
+                *globalMapCloud += *globalSurfCloud;
             int ret = pcl::io::savePLYFileBinary(saveMapDirectory + "/GlobalMap.ply", *globalMapCloud);
             res->success = ret == 0;
             downSizeFilterCorner.setLeafSize(mappingCornerLeafSize, mappingCornerLeafSize, mappingCornerLeafSize);

@@ -39,6 +39,11 @@ find_package(iceoryx_posh CONFIG REQUIRED)
 find_package(iceoryx_hoofs CONFIG REQUIRED)
 
 
+# find the package of nav_common.
+message(STATUS "---------------------------------------------")
+message(STATUS "CMake 路径调试信息：")
+message(STATUS "CMAKE_SOURCE_DIR         = ${CMAKE_SOURCE_DIR}")
+
 add_subdirectory(${CMAKE_SOURCE_DIR}/third_parties third_parties_binary_dir)
 set(third_parties_dir ${CMAKE_CURRENT_SOURCE_DIR}/third_parties)
 include_directories(${third_parties_dir}/json11/include)

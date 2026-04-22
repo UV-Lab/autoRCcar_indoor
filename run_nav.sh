@@ -103,7 +103,10 @@ post_process_command() {
 
   local transform_cmd="${SCRIPT_PATH}/ros2/install/lio_sam/lib/lio_sam/transform_global_map"
   local grid_builder_cmd="${SCRIPT_PATH}/ros2/install/lio_sam/lib/lio_sam/grid_map_builder"
+  local slam_map_post_processing_cmd="${SCRIPT_PATH}/ros2/install/lio_sam/lib/lio_sam/slam_map_post_processing"
+  
   local cfg_file="${SCRIPT_PATH}/ros2/install/lio_sam/share/lio_sam/config/grid_map_builder_cfg.yaml"
+  local loc_config_mid360_slope_file="${SCRIPT_PATH}/ros2/install/lio_sam/share/lio_sam/config/MsfLocConfig_mid360_slope.yaml"
 
   echo "Running transform_global_map..."
   "${transform_cmd}" \
@@ -123,6 +126,17 @@ post_process_command() {
     "${SaveMapPath}/loc_map/grid_map" default
   if [[ $? -ne 0 ]]; then
     echo "Error: grid_map_builder failed"
+    return 1
+  fi
+
+  echo "Running slam_map_post_processing..."
+  "${slam_map_post_processing_cmd}" \
+    "${loc_config_mid360_slope_file}" \
+    "${SaveMapPath}/global_map_tf" \
+    "50" \
+    "${SaveMapPath}/loc_map/split_map"
+  if [[ $? -ne 0 ]]; then
+    echo "Error: slam_map_post_processing failed"
     return 1
   fi
 }
