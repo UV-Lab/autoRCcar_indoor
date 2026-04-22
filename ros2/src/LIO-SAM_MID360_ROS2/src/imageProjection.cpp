@@ -309,31 +309,31 @@ public:
                                                             laserCloudMsg->points[0].y,
                                                             laserCloudMsg->points[0].z);
 
-                                                            // ========================
-        const std::string src_cloud_save_dir = "/sandbox/pointcloud_debug/src";
-        std::error_code ec;
-        std::filesystem::create_directories(src_cloud_save_dir, ec);
-        if (ec)
-        {
-            RCLCPP_WARN(get_logger(), "Failed to create source cloud directory %s: %s",
-                        src_cloud_save_dir.c_str(), ec.message().c_str());
-        }
-        else
-        {
-            pcl::PointCloud<PointType>::Ptr srcCloudForViz(new pcl::PointCloud<PointType>());
-            moveFromCustomMsgToPointType(*laserCloudMsg, *srcCloudForViz);
+        // ========================
+        // const std::string src_cloud_save_dir = "/sandbox/pointcloud_debug/src";
+        // std::error_code ec;
+        // std::filesystem::create_directories(src_cloud_save_dir, ec);
+        // if (ec)
+        // {
+        //     RCLCPP_WARN(get_logger(), "Failed to create source cloud directory %s: %s",
+        //                 src_cloud_save_dir.c_str(), ec.message().c_str());
+        // }
+        // else
+        // {
+        //     pcl::PointCloud<PointType>::Ptr srcCloudForViz(new pcl::PointCloud<PointType>());
+        //     moveFromCustomMsgToPointType(*laserCloudMsg, *srcCloudForViz);
 
-            const auto stamp = laserCloudMsg->header.stamp;
-            std::string ply_file = src_cloud_save_dir + "/src_cloud_" +
-                                   std::to_string(stamp.sec) + "_" +
-                                   std::to_string(stamp.nanosec) + "_" +
-                                   std::to_string(src_cloud_save_count++) + ".ply";
+        //     const auto stamp = laserCloudMsg->header.stamp;
+        //     std::string ply_file = src_cloud_save_dir + "/src_cloud_" +
+        //                            std::to_string(stamp.sec) + "_" +
+        //                            std::to_string(stamp.nanosec) + "_" +
+        //                            std::to_string(src_cloud_save_count++) + ".ply";
 
-            if (pcl::io::savePLYFileBinary(ply_file, *srcCloudForViz) != 0)
-            {
-                RCLCPP_WARN(get_logger(), "Failed to save source cloud: %s", ply_file.c_str());
-            }
-        }
+        //     if (pcl::io::savePLYFileBinary(ply_file, *srcCloudForViz) != 0)
+        //     {
+        //         RCLCPP_WARN(get_logger(), "Failed to save source cloud: %s", ply_file.c_str());
+        //     }
+        // }
         // ========================
 
         auto &curCloudMsg = cloudQueue.back();
@@ -346,12 +346,12 @@ public:
         }
 
         show_cloud_count++;
-        std::cout << "show_cloud_count: " << show_cloud_count 
-        << ", stamp: " << laserCloudMsg->header.stamp.nanosec << ", timebase: " << laserCloudMsg->timebase  
-        << ", size: " << cloudQueue.size()
-        << "first point x,y,z: " << cloudQueue.back().points[0].x << ", " << cloudQueue.back().points[0].y << ", " << cloudQueue.back().points[0].z 
-        << ", src first point x,y,z: " << first_point.x() << ", " << first_point.y() << ", " << first_point.z()
-        <<std::endl;
+        // std::cout << "show_cloud_count: " << show_cloud_count 
+        // << ", stamp: " << laserCloudMsg->header.stamp.nanosec << ", timebase: " << laserCloudMsg->timebase  
+        // << ", size: " << cloudQueue.size()
+        // << "first point x,y,z: " << cloudQueue.back().points[0].x << ", " << cloudQueue.back().points[0].y << ", " << cloudQueue.back().points[0].z 
+        // << ", src first point x,y,z: " << first_point.x() << ", " << first_point.y() << ", " << first_point.z()
+        // <<std::endl;
 
         if (cloudQueue.size() <= 2)
             return false;
@@ -737,7 +737,6 @@ public:
     
     void publishClouds()
     {
-        std::cout << "publishClouds show_cloud_count: " << show_cloud_count   <<std::endl;
         cloudInfo.header = cloudHeader;
         cloudInfo.cloud_deskewed  = publishCloud(pubExtractedCloud, extractedCloud, cloudHeader.stamp, lidarFrame);
         pubLaserCloudInfo->publish(cloudInfo);
