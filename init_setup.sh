@@ -31,4 +31,5 @@ cmake .. && make -j
 sudo make install
 cd ../..
 
+bash ros2/src/rob_common/third_parties/init.sh
 ./build_ros2.sh
