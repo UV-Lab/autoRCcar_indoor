@@ -109,6 +109,11 @@ set(COMMAND_HANDLER_SOURCES
         command_handler/mid360_command_handler.cpp
         command_handler/build_request.cpp
         command_handler/parse_lidar_state_info.cpp
+        command_handler/mid360s_command_handler.cpp
+        )
+set(DEBUG_POINT_CLOUD_HANDLER_SOURCES
+        debug_point_cloud_handler/debug_point_cloud_manager.cpp
+        debug_point_cloud_handler/debug_point_cloud_handler.cpp
         )
 
 set(LIVOX_SOURCES
@@ -121,6 +126,7 @@ set(LIVOX_SOURCES
         ${LOGGER_HANDLER_SOURCES}
         ${DATA_HANDLER_SOURCES}
         ${COMMAND_HANDLER_SOURCES}
+        ${DEBUG_POINT_CLOUD_HANDLER_SOURCES}
         )
 
 target_sources(${SDK_LIBRARY_STATIC}
