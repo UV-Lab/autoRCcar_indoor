@@ -12,7 +12,7 @@ sudo add-apt-repository ppa:borglab/gtsam-release-4.1
 sudo apt install -y libgtsam-dev libgtsam-unstable-dev
 
 ## oCam
-sudo apt-get install libv4l-dev libudev-dev
+sudo apt-get install -y libv4l-dev libudev-dev
 
 ## GCS
 pip install numpy PyQt5 pyqtgraph
