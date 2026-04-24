@@ -159,6 +159,8 @@ public:
     Eigen::Matrix4f tfBaseLidar;
     Eigen::Matrix3f rotBaseLidar;
 
+    string rosLogFile;
+
     ParamServer(std::string node_name, const rclcpp::NodeOptions & options) : Node(node_name, options)
     {
         declare_parameter("pointCloudTopic", "points");
@@ -333,6 +335,10 @@ public:
                 cout << "quat_vl_l_wxyz"
                 << "[" << quat_vl_l.w() << " "<<  quat_vl_l.x()
                 << " "<<  quat_vl_l.y() << " "<<  quat_vl_l.z() << "]" << endl;
+
+        declare_parameter("rosLogFile", "/sandbox/data/run_nav.log");
+        get_parameter("rosLogFile", rosLogFile);
+
         usleep(100);
     }
 

@@ -34,40 +34,40 @@ int GridMapMaker::init() {
     return 0;
 }
 
-int GridMapMaker::addFrameToGridMap(const Eigen::Matrix4f &tf_world_base,
-                                    CloudT::Ptr base_cloud_ptr) {
-    auto rc = m_gs_ptr->groundSegment(base_cloud_ptr);
-    if (rc != 0) {
-        ROB_LOG_WARN("Ground segment failed.");
-        return -1;
-    }
+// int GridMapMaker::addFrameToGridMap(const Eigen::Matrix4f &tf_world_base,
+//                                     CloudT::Ptr base_cloud_ptr) {
+//     auto rc = m_gs_ptr->groundSegment(base_cloud_ptr);
+//     if (rc != 0) {
+//         ROB_LOG_WARN("Ground segment failed.");
+//         return -1;
+//     }
 
-    auto ground_cloud_ptr = m_gs_ptr->getGroundCloud();
-    auto non_ground_cloud_ptr = m_gs_ptr->getNonGroundCloud();
+//     auto ground_cloud_ptr = m_gs_ptr->getGroundCloud();
+//     auto non_ground_cloud_ptr = m_gs_ptr->getNonGroundCloud();
 
-    CloudT::Ptr world_non_ground_cloud_ptr(new CloudT());
-    pcl::transformPointCloud(*non_ground_cloud_ptr, *world_non_ground_cloud_ptr,
-                             tf_world_base);
-    *m_non_ground_cloud_ptr += *world_non_ground_cloud_ptr;
-    CloudT::Ptr world_ground_cloud_ptr(new CloudT());
-    pcl::transformPointCloud(*ground_cloud_ptr, *world_ground_cloud_ptr,
-                             tf_world_base);
-    *m_ground_cloud_ptr += *world_ground_cloud_ptr;
+//     CloudT::Ptr world_non_ground_cloud_ptr(new CloudT());
+//     pcl::transformPointCloud(*non_ground_cloud_ptr, *world_non_ground_cloud_ptr,
+//                              tf_world_base);
+//     *m_non_ground_cloud_ptr += *world_non_ground_cloud_ptr;
+//     CloudT::Ptr world_ground_cloud_ptr(new CloudT());
+//     pcl::transformPointCloud(*ground_cloud_ptr, *world_ground_cloud_ptr,
+//                              tf_world_base);
+//     *m_ground_cloud_ptr += *world_ground_cloud_ptr;
 
-    std::vector<cv::Point2f> world_pnts;
-    if (non_ground_cloud_ptr->size() > 10) {
-        rc = m_cts_ptr->convertCloudToScan(tf_world_base, non_ground_cloud_ptr,
-                                           world_pnts);
-    } else {
-        ROB_LOG_WARN("The non ground cloud size < 10. return.");
-        return -2;
-    }
+//     std::vector<cv::Point2f> world_pnts;
+//     if (non_ground_cloud_ptr->size() > 10) {
+//         rc = m_cts_ptr->convertCloudToScan(tf_world_base, non_ground_cloud_ptr,
+//                                            world_pnts);
+//     } else {
+//         ROB_LOG_WARN("The non ground cloud size < 10. return.");
+//         return -2;
+//     }
 
-    cv::Point2f pnt_w_l(tf_world_base(0, 3), tf_world_base(1, 3));
-    m_occ_map_ptr->addLidar2dFrame(pnt_w_l, world_pnts);
+//     cv::Point2f pnt_w_l(tf_world_base(0, 3), tf_world_base(1, 3));
+//     m_occ_map_ptr->addLidar2dFrame(pnt_w_l, world_pnts);
 
-    return 0;
-}
+//     return 0;
+// }
 
 int GridMapMaker::addFrameToGridMap(const Eigen::Matrix4f &tf_world_base,
                                     CloudT::Ptr base_cloud_ptr,
@@ -78,27 +78,37 @@ int GridMapMaker::addFrameToGridMap(const Eigen::Matrix4f &tf_world_base,
         return -1;
     }
 
+    std::cout << "----------step1--addFrameToGridMap--------" << std::endl;
+
     auto ground_cloud_ptr = m_gs_ptr->getGroundCloud();
     auto non_ground_cloud_ptr = m_gs_ptr->getNonGroundCloud();
 
 
     std::cout << "non_ground_cloud_ptr size = " << non_ground_cloud_ptr->points.size()
               << std::endl;
-    std::cout << "ground_cloud_ptr size = " << ground_cloud_ptr->points.size()
-              << std::endl;
 
-    CloudT::Ptr world_non_ground_cloud_ptr(new CloudT());
-    pcl::transformPointCloud(*non_ground_cloud_ptr, *world_non_ground_cloud_ptr,
-                             tf_world_base);
+    std::cout << "----------step2--addFrameToGridMap--------" << std::endl;
+    if (non_ground_cloud_ptr->points.size()){
+    std::cout << "----------step2.1--addFrameToGridMap--------" << std::endl;
+        CloudT::Ptr world_non_ground_cloud_ptr(new CloudT());
+    std::cout << "----------step2.2--addFrameToGridMap--------" << std::endl;
+        pcl::transformPointCloud(*non_ground_cloud_ptr, *world_non_ground_cloud_ptr, tf_world_base);
 
+    std::cout << "----------step2.3--addFrameToGridMap--------m_non_ground_cloud_ptr.size()" << m_non_ground_cloud_ptr->size() << std::endl;
+        *m_non_ground_cloud_ptr += *world_non_ground_cloud_ptr;
+
+    }
+    
     std::cout << "make be ok" << std::endl;
 
-
-    *m_non_ground_cloud_ptr += *world_non_ground_cloud_ptr;
+    std::cout << "ground_cloud_ptr size = " << ground_cloud_ptr->points.size()
+              << std::endl;
+    if (ground_cloud_ptr->points.size()){
     CloudT::Ptr world_ground_cloud_ptr(new CloudT());
-    pcl::transformPointCloud(*ground_cloud_ptr, *world_ground_cloud_ptr,
-                             tf_world_base);
-    *m_ground_cloud_ptr += *world_ground_cloud_ptr;
+        pcl::transformPointCloud(*ground_cloud_ptr, *world_ground_cloud_ptr, tf_world_base);
+        *m_ground_cloud_ptr += *world_ground_cloud_ptr;
+    }
+    
 
     std::vector<cv::Point2f> world_pnts;
     if (non_ground_cloud_ptr->size() > 10) {

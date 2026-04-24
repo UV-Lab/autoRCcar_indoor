@@ -22,6 +22,7 @@
 
 
 #include <planeFitting/planeFittingProcess.h>
+#include <rosLog/rosLog.h>
 
 
 using namespace gtsam;
@@ -160,13 +161,15 @@ public:
     std::unique_ptr<tf2_ros::TransformBroadcaster> br;
 
     std::unique_ptr<gac::lio_sam::PlaneFittingProcess> planeFittingProcess_ = std::make_unique<gac::lio_sam::PlaneFittingProcess>();
-
+    std::unique_ptr<gac::lio_sam::RosLog> rosLog_ = nullptr;
     /** gps */
     // first gps position.？？
     //nav_msgs::OdometryPtr firstGpsOdomMsgPtr = nullptr;
 
     mapOptimization(const rclcpp::NodeOptions & options) : ParamServer("lio_sam_mapOptimization", options)
     {
+        rosLog_ = std::make_unique<gac::lio_sam::RosLog>(rosLogFile);
+
         ISAM2Params parameters;
         parameters.relinearizeThreshold = 0.1;
         parameters.relinearizeSkip = 1;

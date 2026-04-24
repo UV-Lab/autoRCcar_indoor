@@ -239,6 +239,8 @@ int main(int argc, char **argv) {
         *world_map_ptr += *map2_cloud_ptr;
     }
 
+    pcl::io::savePLYFile("/sandbox/data/temp.ply", *world_map_ptr);
+
     cv::Point2f min_pnt, max_pnt;
     {
         const auto &cloud = world_map_ptr->points;
@@ -275,6 +277,10 @@ int main(int argc, char **argv) {
 
     /************************ form the grid map. *******************************/
     for (int idx = 0; idx != cloud_cnt; ++idx) {
+        // if(idx > 0 ){
+        //     return 0;
+
+        // }
         
         ROB_LOG_INFO("Point idx = %d.", idx);
         std::string cloud_file = cloud_path + std::to_string(idx) + ".ply";
@@ -287,11 +293,15 @@ int main(int argc, char **argv) {
 
         pcl::PointCloud<PointType>::Ptr cur_base_cloud_ptr(new pcl::PointCloud<PointType>());
         pcl::transformPointCloud(*cur_lidar_cloud_ptr, *cur_base_cloud_ptr, tf_base_lidar);
-
+        
         cur_base_cloud_ptr = trimPointCloud(cur_base_cloud_ptr, cloud_range);
         ROB_LOG_INFO("step2: trimPointCloud idx = %d",idx);
         // load the pose of the current cloud.
         std::string node_name = cloud_prefix + std::to_string(idx);
+        // cur_base_cloud_ptr 包含底部已经裁剪过的部分（没有抬升高度的部分）
+        // std::string a = "/sandbox/data/temp_sub_" + std::to_string(idx) + "_0.ply";
+        // pcl::io::savePLYFile(a, *cur_base_cloud_ptr);
+
 
 
 
@@ -317,9 +327,22 @@ int main(int argc, char **argv) {
         Eigen::Matrix4f tf_map2_base = tf_base_lidar * tf_map1_lidar * tf_lidar_base;
         ROB_LOG_INFO("step4: tf_map2_base:", tf_map2_base);
 
+        //temp tf_map1_lidar 是带修正高度的，所以与地面持平
+        // pcl::PointCloud<PointType>::Ptr cur_base_cloud_ptr1(new pcl::PointCloud<PointType>());
+        // pcl::transformPointCloud(*cur_lidar_cloud_ptr, *cur_base_cloud_ptr1, tf_map2_base);
+
+        // pcl::io::savePLYFile("/sandbox/data/temp_sub_1.ply", *cur_base_cloud_ptr1);
+
+        //temp
+
         auto sub_map_in_base =
                 extractSubMapCloud(world_map_ptr, cloud_range, tf_map2_base);
         ROB_LOG_INFO("step5: sub_map_in_base created");
+
+        // 世界地图，地面部分片段，但是没有抬升高度的
+
+        // std::string b = "/sandbox/data/temp_sub_" + std::to_string(idx) + "_2.ply";
+        // pcl::io::savePLYFile(b, *sub_map_in_base);
 
 
         gmm_ptr->addFrameToGridMap(tf_map2_base, cur_base_cloud_ptr, sub_map_in_base);

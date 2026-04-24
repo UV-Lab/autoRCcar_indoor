@@ -73,7 +73,7 @@ def scan_command() -> None:
     print(f"Started scan process PID={proc.pid}")
 
 
-def function_two(user_data_dir: str) -> None:
+def ros_bag_play(user_data_dir: str) -> None:
     print("开始执行函数2...")
     run_shell_command(["ros2", "bag", "play", user_data_dir, "-r", "1"])
     print(f"函数2执行完成，目标目录: {user_data_dir}")
@@ -195,7 +195,7 @@ def main() -> int:
     try:
         user_data_dir = validate_input_path(sys.argv)
         scan_command()
-        function_two(user_data_dir)
+        ros_bag_play(user_data_dir)
         savemap_command(user_data_dir)
         post_process_command()
         print("全部步骤执行完成。")

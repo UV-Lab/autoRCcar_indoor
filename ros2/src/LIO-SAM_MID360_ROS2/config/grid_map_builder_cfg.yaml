@@ -45,7 +45,7 @@ ground_segment:
   dist_th: 0.150
   # the angle threshold of slope, unit: rad.
   slop_deg_th: 20.0
-  segment_height_th: -1.60
+  segment_height_th: -0.6
 
 cloud_to_scan:
   # The min scan angle, unit: deg

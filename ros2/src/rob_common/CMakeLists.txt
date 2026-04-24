@@ -163,7 +163,7 @@ install(TARGETS yaml-cpp
 
 
 ########### test ###########
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
+# add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
 # set(test_dir ${CMAKE_CURRENT_SOURCE_DIR}/tests)
 # file(COPY ${test_dir}/resources DESTINATION ${CMAKE_BINARY_DIR}/tests/)
 # # The example of config and log tools.

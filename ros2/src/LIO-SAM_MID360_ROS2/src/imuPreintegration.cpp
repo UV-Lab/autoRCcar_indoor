@@ -16,6 +16,8 @@
 #include "autorccar_interfaces/msg/nav_state.hpp"
 #include "utility.hpp"
 
+#include <rosLog/rosLog.h>
+
 using gtsam::symbol_shorthand::B;  // Bias  (ax,ay,az,gx,gy,gz)
 using gtsam::symbol_shorthand::V;  // Vel   (xdot,ydot,zdot)
 using gtsam::symbol_shorthand::X;  // Pose3 (x,y,z,r,p,y)
@@ -203,7 +205,13 @@ class IMUPreintegration : public ParamServer {
     gtsam::Pose3 lidar2Imu =
         gtsam::Pose3(gtsam::Rot3(1, 0, 0, 0), gtsam::Point3(extTrans.x(), extTrans.y(), extTrans.z()));
 
+    std::unique_ptr<gac::lio_sam::RosLog> rosLog_ = nullptr;
+
     IMUPreintegration(const rclcpp::NodeOptions& options) : ParamServer("lio_sam_imu_preintegration", options) {
+
+        rosLog_ = std::make_unique<gac::lio_sam::RosLog>(rosLogFile);
+        rosLog_->Write("0");
+
         callbackGroupImu = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
         callbackGroupOdom = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
@@ -456,6 +464,7 @@ class IMUPreintegration : public ParamServer {
         Eigen::Vector3f vel(velCur.x(), velCur.y(), velCur.z());
         if (vel.norm() > 30) {
             RCLCPP_WARN(get_logger(), "Large velocity, reset IMU-preintegration!");
+            rosLog_->Write("1001");
             return true;
         }
 
@@ -463,6 +472,7 @@ class IMUPreintegration : public ParamServer {
         Eigen::Vector3f bg(biasCur.gyroscope().x(), biasCur.gyroscope().y(), biasCur.gyroscope().z());
         if (ba.norm() > 1.0 || bg.norm() > 1.0) {
             RCLCPP_WARN(get_logger(), "Large bias, reset IMU-preintegration!");
+            rosLog_->Write("1002");
             return true;
         }
 

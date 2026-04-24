@@ -26,8 +26,8 @@ public:
     virtual ~GridMapMaker();
     int init();
 
-    int addFrameToGridMap(const Eigen::Matrix4f &tf_world_base,
-                          CloudT::Ptr base_cloud_ptr);
+    // int addFrameToGridMap(const Eigen::Matrix4f &tf_world_base,
+    //                       CloudT::Ptr base_cloud_ptr);
 
     int addFrameToGridMap(const Eigen::Matrix4f &tf_world_base,
                           CloudT::Ptr base_cloud_ptr,

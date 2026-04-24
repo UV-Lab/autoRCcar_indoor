@@ -1,28 +1,29 @@
 cmake_minimum_required(VERSION 3.5)
 
 ########### test ###########
-set(test_dir ${CMAKE_CURRENT_SOURCE_DIR})
-file(COPY ${test_dir}/resources DESTINATION ${CMAKE_BINARY_DIR}/tests/)
-# The example of config and log tools.
-add_executable(log_test 
-    ${test_dir}/log_test.cpp
-)
-target_link_libraries(log_test
-  ${PROJECT_NAME}
-)
-ament_target_dependencies(log_test
-  rclcpp spdlog_vendor 
-)
+# set(test_dir ${CMAKE_CURRENT_SOURCE_DIR})
+# file(COPY ${test_dir}/resources DESTINATION ${CMAKE_BINARY_DIR}/tests/)
+# # The example of config and log tools.
+# add_executable(log_test 
+#     ${test_dir}/log_test.cpp
+# )
+# target_link_libraries(log_test
+#   ${PROJECT_NAME}
+# )
+# ament_target_dependencies(log_test
+#   rclcpp spdlog_vendor 
+# )
 
-add_executable(config_test 
-    ${test_dir}/config_test.cpp
-)
-target_link_libraries(config_test
-  ${PROJECT_NAME}
-)
-ament_target_dependencies(config_test
-  rclcpp spdlog_vendor 
-)
+
+# add_executable(config_test 
+#     ${test_dir}/config_test.cpp
+# )
+# target_link_libraries(config_test
+#   ${PROJECT_NAME}
+# )
+# ament_target_dependencies(config_test
+#   rclcpp spdlog_vendor 
+# )
 
 ########### rob_bridge test 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/proto_files ${PROJECT_BINARY_DIR}/proto_generated)

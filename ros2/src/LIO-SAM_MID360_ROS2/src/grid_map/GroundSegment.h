@@ -30,7 +30,7 @@ public:
 
     int init();
 
-    int groundSegment(CloudT::Ptr src_cloud_ptr);
+    // int groundSegment(CloudT::Ptr src_cloud_ptr);
     int groundSegment(CloudT::Ptr src_cloud_ptr,
                       CloudT::Ptr auxiliary_src_cloud_ptr);
 
