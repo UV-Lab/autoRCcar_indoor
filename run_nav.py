@@ -1,151 +1,101 @@
 #!/usr/bin/env python3
 
-import os
-import shlex
-import signal
-import subprocess
 import sys
+import os
+import json
+import subprocess
 import time
+import shlex
+
 from pathlib import Path
 
 SCRIPT_PATH = Path(__file__).resolve().parent
 print(SCRIPT_PATH)
 
-# INSTALL_PATH = f"{SCRIPT_PATH}/ros2/install/setup.bash"
-SCAN_PID_FILE = Path("/tmp/.run_nav_scan.pid")
-SAVE_MAP_PATH = ""
+# 配置部分 - 请根据实际情况修改这些路径或命令
+JSON_FILE_PATH = "/tmp/run_mapping.json"
 
 
-def print_usage() -> None:
-    print(f"用法: {Path(sys.argv[0]).name} <用户数据文件夹路径>")
 
 
-def validate_input_path(argv: list[str]) -> str:
-    if len(argv) < 2:
-        print_usage()
-        raise ValueError("缺少用户数据文件夹路径参数")
 
-    user_data_dir = argv[1]
-    if user_data_dir[-1] == "/":
-        user_data_dir = user_data_dir[:-1]
-    if not Path(user_data_dir).is_dir():
-        raise FileNotFoundError(f"错误: 命令行路径不准确，目录不存在: {user_data_dir}")
-
-    print(f"用户数据目录校验通过: {user_data_dir}")
-    return user_data_dir
+def log(message):
+    """简单的日志打印函数"""
+    print(f"[INFO] {message}")
 
 
-def _is_process_alive(pid: int) -> bool:
+def run_shell_command(command: list) -> None:
     try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
-        return False
-    except PermissionError:
-        return True
-    return True
+        subprocess.run(command, check=True)
+        log("save_map 执行完毕。")
+    except subprocess.CalledProcessError as e:
+        log(f"save_map 执行失败: {e}")
 
-
-def run_shell_command(command: str) -> None:
+def write_pid_file(driver_pid, sam_pid):
+    """Step 6: 记录进程ID到json文件"""
+    data = {
+        "driver_pid": driver_pid,
+        "sam_pid": sam_pid,
+        "timestamp": time.time()
+    }
     try:
-        subprocess.run(command, check=True, shell=True, executable="/bin/bash")
-    except (subprocess.SubprocessError, OSError):
-        stop_scan_process()
-        raise
+        with open(JSON_FILE_PATH, 'w') as f:
+            json.dump(data, f)
+        log(f"进程ID已记录到 {JSON_FILE_PATH}")
+    except Exception as e:
+        log(f"写入JSON文件失败: {e}")
 
-
-def scan_command() -> None:
-    print(f"[{SCRIPT_PATH}] scan: performing sensor scan")
-
-    if SCAN_PID_FILE.exists():
-        existing_text = SCAN_PID_FILE.read_text(encoding="utf-8").strip()
-        if existing_text:
-            existing_pid = int(existing_text)
-            if _is_process_alive(existing_pid):
-                raise RuntimeError(f"Scan k running with PID {existing_pid}.")
-
+def read_pid_file():
+    """读取json文件中的PID"""
     try:
-        proc = subprocess.Popen(
-            ["ros2", "launch", "lio_sam", "run.launch.py"],
-            preexec_fn=os.setsid,
-        )
-    except (subprocess.SubprocessError, OSError):
-        stop_scan_process()
-        raise
+        with open(JSON_FILE_PATH, 'r') as f:
+            data = json.load(f)
+            return data.get("driver_pid"), data.get("sam_pid")
+    except Exception as e:
+        log(f"读取JSON文件失败: {e}")
+        return None, None
 
-    SCAN_PID_FILE.write_text(str(proc.pid), encoding="utf-8")
-    print(f"Started scan process PID={proc.pid}")
-
-
-def ros_bag_play(user_data_dir: str) -> None:
-    print("开始执行函数2...")
-    run_shell_command(f"ros2 bag play {shlex.quote(user_data_dir)} -r 1")
-    print(f"函数2执行完成，目标目录: {user_data_dir}")
-
-
-def stop_scan_process() -> None:
-    if not SCAN_PID_FILE.exists():
+def kill_process_tree(pid):
+    """递归杀死进程及其子进程"""
+    if not pid:
         return
+    try:
+        # 使用 pgrep 查找子进程
+        # 注意：这里使用简单的 kill -TERM，如果需要强制杀死可以用 -9
+        subprocess.run(["pgrep", "-P", str(pid)], capture_output=True)
+        # 先杀子进程，再杀父进程
+        subprocess.run(["pkill", "-TERM", "-P", str(pid)])
+        time.sleep(0.5)
+        subprocess.run(["kill", "-TERM", str(pid)])
+        log(f"已终止进程: {pid}")
+    except Exception as e:
+        log(f"终止进程 {pid} 失败: {e}")
 
-    scan_pid_text = SCAN_PID_FILE.read_text(encoding="utf-8").strip()
-    if not scan_pid_text:
-        SCAN_PID_FILE.unlink(missing_ok=True)
-        return
+def execute_start():
+    """Step 3 -> Start 分支逻辑"""
+    log("执行启动逻辑...")
 
-    scan_pid = int(scan_pid_text)
-    if _is_process_alive(scan_pid):
-        print(f"Stopping scan process PID={scan_pid} and its subprocesses")
-        try:
-            os.killpg(scan_pid, signal.SIGINT)
-        except ProcessLookupError:
-            pass
+    # Step 4: 检查文件是否存在
+    if os.path.exists(JSON_FILE_PATH):
+        # Step 5: 提示已有程序在运行，直接结束
+        log("检测到 /tmp/run_mapping.json 存在，提示：已经有程序正在运行。")
+        sys.exit(1)
+    else:
+        # Step 6: 启动脚本并记录PID
+        log("启动 livox_ros_driver2...")
+        # 使用 Popen 启动后台进程
+        # stdout=subprocess.DEVNULL 表示不输出日志到当前终端，你可以改为 PIPE 或文件
+        p1 = subprocess.Popen(["ros2", "launch", "livox_ros_driver2", "msg_MID360_launch.py"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-        time.sleep(1)
+        log("启动 lio_sam_run...")
+        p2 = subprocess.Popen(["ros2", "run", "lio_sam", "run.launch.py"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-        if _is_process_alive(scan_pid):
-            try:
-                os.killpg(scan_pid, signal.SIGTERM)
-            except ProcessLookupError:
-                pass
+        log(f"启动成功，PID分别为: {p1.pid}, {p2.pid}")
+        write_pid_file(p1.pid, p2.pid)
 
-    SCAN_PID_FILE.unlink(missing_ok=True)
-
-
-def savemap_command(user_data_dir: str) -> None:
-    global SAVE_MAP_PATH
-
-    print(f"[{SCRIPT_PATH}] savemap: saving generated map")
-
-    SAVE_MAP_PATH = f"{user_data_dir}_result"
-    print(f"Please enter save map path: {SAVE_MAP_PATH}")
-
-    if not SAVE_MAP_PATH:
-        print("SAVE_MAP_PATH cannot be empty and stop scan")
-        stop_scan_process()
-        return
-
-    save_map_dir = Path(SAVE_MAP_PATH)
-    save_map_dir.mkdir(parents=True, exist_ok=True)
-
-    if not SAVE_MAP_PATH.endswith("/"):
-        SAVE_MAP_PATH = f"{SAVE_MAP_PATH}/"
-
-    print(f"Using save map destination: {SAVE_MAP_PATH}")
-    service_payload = (
-        "{resolution: 0.2, destination: '" + SAVE_MAP_PATH + "'}"
-    )
-    run_shell_command(
-        "ros2 service call /lio_sam/save_map lio_sam/srv/SaveMap "
-        f"{shlex.quote(service_payload)}"
-    )
-
-    stop_scan_process()
-
-
-def post_process_command() -> None:
-    print(f"[{SCRIPT_PATH}] post_process: running post-processing steps")
-
-    if not SAVE_MAP_PATH:
-        raise RuntimeError("Error: SAVE_MAP_PATH cannot be empty")
+def execute_stop():
+    """Step 3 -> End 分支逻辑"""
+    log("执行停止逻辑...")
 
     transform_cmd = f"{SCRIPT_PATH}/ros2/install/lio_sam/lib/lio_sam/transform_global_map"
     grid_builder_cmd = f"{SCRIPT_PATH}/ros2/install/lio_sam/lib/lio_sam/grid_map_builder"
@@ -154,48 +104,96 @@ def post_process_command() -> None:
     cfg_file = f"{SCRIPT_PATH}/ros2/install/lio_sam/share/lio_sam/config/grid_map_builder_cfg.yaml"
     loc_config_mid360_slope_file = f"{SCRIPT_PATH}/ros2/install/lio_sam/share/lio_sam/config/MsfLocConfig_mid360_slope.yaml"
 
-    print("Running transform_global_map...")
-    run_shell_command(
-        f"{shlex.quote(transform_cmd)} "
-        f"{shlex.quote(f'{SAVE_MAP_PATH}/pointCloud')} "
-        f"{shlex.quote(cfg_file)} "
-        f"{shlex.quote(f'{SAVE_MAP_PATH}/tf_new_old_mat.txt')} "
-        f"{shlex.quote(f'{SAVE_MAP_PATH}/global_map_tf')}"
-    )
+    # Step 4: 检查文件是否存在
+    if not os.path.exists(JSON_FILE_PATH):
+        # Step 11: 提示没有运行的程序，直接结束
+        log("检测到 /tmp/run_mapping.json 不存在，提示：没有运行的程序。")
+        sys.exit(1)
+    else:
+        # Step 7: 等待用户输入一个字符串
+        user_input = input(">>> 请在此输入任意字符以继续执行保存地图操作: ")
+        log(f"用户输入: {user_input}")
 
-    print("Running grid_map_builder...")
-    run_shell_command(
-        f"{shlex.quote(grid_builder_cmd)} "
-        f"{shlex.quote(f'{SAVE_MAP_PATH}/global_map_tf/pointCloud')} "
-        f"{shlex.quote(cfg_file)} "
-        f"{shlex.quote(f'{SAVE_MAP_PATH}/loc_map/grid_map')} default"
-    )
-
-    print("Running slam_map_post_processing...")
-    run_shell_command(
-        f"{shlex.quote(slam_map_post_processing_cmd)} "
-        f"{shlex.quote(loc_config_mid360_slope_file)} "
-        f"{shlex.quote(f'{SAVE_MAP_PATH}/global_map_tf')} "
-        f"50 {shlex.quote(f'{SAVE_MAP_PATH}/loc_map/split_map')}"
-    )
+        # Step 8: 执行 save_map 命令行
+        log("正在执行 save_map...")
 
 
-def main() -> int:
-    try:
-        user_data_dir = validate_input_path(sys.argv)
-        # 
-        # 在这里执行 'bash ${SCRIPT_PATH}/build_ros2.sh' 这个脚本
-        # 且这个脚本中会执行source这种语句，使得在后续脚步中也生效
-        scan_command()
-        ros_bag_play(user_data_dir)
-        savemap_command(user_data_dir)
-        post_process_command()
-        print("全部步骤执行完成。")
-        return 0
-    except Exception as exc:
-        print(str(exc), file=sys.stderr)
-        return 1
+        print(f"Using save map destination: {user_input}")
+        service_payload = ("{resolution: 0.2, destination: '" + user_input + "'}")
+        
+        run_shell_command(["ros2", "service", "call",  "/lio_sam/save_map", "lio_sam/srv/SaveMap",
+        f"{shlex.quote(service_payload)}"])
+        # 根据需求决定失败是否继续，这里选择继续尝试清理
 
+        # Step 9: 读取JSON，kill进程
+        driver_pid, sam_pid = read_pid_file()
+
+        log("正在终止相关进程...")
+        kill_process_tree(driver_pid)
+        kill_process_tree(sam_pid)
+
+        # 清理 JSON 文件
+        try:
+            os.remove(JSON_FILE_PATH)
+            log("已清理临时文件 /tmp/run_mapping.json")
+        except OSError:
+            log("清理临时文件失败")
+
+        # 等待进程彻底关闭
+        time.sleep(1)
+
+
+        print("Running transform_global_map...")
+        run_shell_command(
+            [
+                transform_cmd,
+                f"{user_input}/pointCloud",
+                cfg_file,
+                f"{user_input}/tf_new_old_mat.txt",
+                f"{user_input}/global_map_tf",
+            ]
+        )
+
+        print("Running grid_map_builder...")
+        run_shell_command(
+            [
+                grid_builder_cmd,
+                f"{user_input}/global_map_tf/pointCloud",
+                cfg_file,
+                f"{user_input}/loc_map/grid_map",
+                "default",
+            ]
+        )
+
+        print("Running slam_map_post_processing...")
+        run_shell_command(
+            [
+                slam_map_post_processing_cmd,
+                loc_config_mid360_slope_file,
+                f"{user_input}/global_map_tf",
+                "50",
+                f"{user_input}/loc_map/split_map",
+            ]
+        )
+
+        
+
+def main():
+    """主函数逻辑"""
+
+    # Step 1: 脚本接受一个参数 (action)
+    # Step 2: 如果参数数量和值不对，则退出
+    if len(sys.argv) != 2 or sys.argv[1] not in ['start', 'stop']:
+        print("Usage: python3 manager.py [start|stop]")
+        sys.exit(1)
+
+    action = sys.argv[1]
+
+    # Step 3: 参数值判断
+    if action == 'start':
+        execute_start()
+    elif action == 'stop':
+        execute_stop()
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()
