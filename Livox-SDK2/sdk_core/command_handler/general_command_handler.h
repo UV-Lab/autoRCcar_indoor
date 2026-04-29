@@ -100,11 +100,22 @@ class GeneralCommandHandler : public noncopyable {
     livox_lidar_info_client_data_ = client_data;
   }
 
+  void LivoxLidarAddCmdObserver(LivoxLidarCmdObserverCallBack cb, void* client_data) {
+    cmd_observer_cb_ = cb;
+    cmd_observer_client_data_ = client_data;
+  }
+
+  void LivoxLidarRemoveCmdObserver() {
+    cmd_observer_cb_ = nullptr;
+    cmd_observer_client_data_ = nullptr;
+  }
+
   void UpdateLidarCfg(const ViewLidarIpInfo& view_lidar_info);
   void UpdateLidarCfg(const uint8_t dev_type, const uint32_t handle, const uint16_t lidar_cmd_port);
   void LivoxLidarInfoChange(const uint32_t handle);
   void PushLivoxLidarInfo(const uint32_t handle, const std::string& info);
   bool GetQueryLidarInternalInfoKeys(const uint32_t handle, std::set<ParamKeyName>& key_sets);
+  const LivoxLidarCfg& GetLidarCfg(const uint32_t handle);
   livox_status LivoxLidarRequestReset(uint32_t handle, LivoxLidarResetCallback cb, void* client_data);
   static void QueryFwTypeCallback(livox_status status, uint32_t handle, LivoxLidarDiagInternalInfoResponse* response, void* client_data);
  private:
@@ -138,6 +149,9 @@ class GeneralCommandHandler : public noncopyable {
 
   LivoxLidarInfoCallback livox_lidar_info_cb_;
   void* livox_lidar_info_client_data_;
+
+  LivoxLidarCmdObserverCallBack cmd_observer_cb_{nullptr};
+  void* cmd_observer_client_data_{nullptr};
 
   std::string detection_host_ip_;
   bool is_view_;

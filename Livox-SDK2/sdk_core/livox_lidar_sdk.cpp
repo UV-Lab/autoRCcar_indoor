@@ -72,36 +72,34 @@ bool LivoxLidarSdkInit(const char* path, const char* host_ip, const LivoxLidarLo
   }
 #endif // WIN32
 
-  do {
-    InitLogger();
+  InitLogger();
 
-    if (path == NULL && host_ip == NULL) {
+  if (path == NULL && host_ip == NULL) {
+    return false;
+  }
+
+  if (path) {
+    std::shared_ptr<std::vector<LivoxLidarCfg>> lidars_cfg_ptr = nullptr;
+    std::shared_ptr<std::vector<LivoxLidarCfg>> custom_lidars_cfg_ptr = nullptr;
+    std::shared_ptr<LivoxLidarLoggerCfg> lidar_logger_cfg_ptr = nullptr;
+    std::shared_ptr<LivoxLidarSdkFrameworkCfg> sdk_framework_cfg_ptr = nullptr;
+
+    if (!ParseCfgFile(path).Parse(lidars_cfg_ptr, custom_lidars_cfg_ptr, lidar_logger_cfg_ptr, sdk_framework_cfg_ptr)) {
       return false;
     }
 
-    if (path) {
-      std::shared_ptr<std::vector<LivoxLidarCfg>> lidars_cfg_ptr = nullptr;
-      std::shared_ptr<std::vector<LivoxLidarCfg>> custom_lidars_cfg_ptr = nullptr;
-      std::shared_ptr<LivoxLidarLoggerCfg> lidar_logger_cfg_ptr = nullptr;
-      std::shared_ptr<LivoxLidarSdkFrameworkCfg> sdk_framework_cfg_ptr = nullptr;
-
-      if (!ParseCfgFile(path).Parse(lidars_cfg_ptr, custom_lidars_cfg_ptr, lidar_logger_cfg_ptr, sdk_framework_cfg_ptr)) {
-        return false;
-      }
-
-      if (!ParamsCheck(lidars_cfg_ptr, custom_lidars_cfg_ptr).Check()) {
-        return false;
-      }
-
-      if (!DeviceManager::GetInstance().Init(lidars_cfg_ptr, custom_lidars_cfg_ptr, lidar_logger_cfg_ptr, sdk_framework_cfg_ptr)) {
-        return false;
-      }
-    } else {
-      if (!DeviceManager::GetInstance().Init(host_ip, log_cfg_info)) {
-        return false;
-      }
+    if (!ParamsCheck(lidars_cfg_ptr, custom_lidars_cfg_ptr).Check()) {
+      return false;
     }
-  } while (0);
+
+    if (!DeviceManager::GetInstance().Init(lidars_cfg_ptr, custom_lidars_cfg_ptr, lidar_logger_cfg_ptr, sdk_framework_cfg_ptr)) {
+      return false;
+    }
+  } else {
+    if (!DeviceManager::GetInstance().Init(host_ip, log_cfg_info)) {
+      return false;
+    }
+  }
 
   is_initialized = true;
   return true;
@@ -147,6 +145,14 @@ void LivoxLidarRemovePointCloudObserver(uint16_t id) {
 
 void SetLivoxLidarPointCloudCallBack(LivoxLidarPointCloudCallBack cb, void *client_data) {
   DataHandler::GetInstance().SetPointDataCallback(cb, client_data);
+}
+
+void LivoxLidarAddCmdObserver(LivoxLidarCmdObserverCallBack cb, void *client_data) {
+  GeneralCommandHandler::GetInstance().LivoxLidarAddCmdObserver(cb, client_data);
+}
+
+void LivoxLidarRemoveCmdObserver() {
+  GeneralCommandHandler::GetInstance().LivoxLidarRemoveCmdObserver();
 }
 
 void SetLivoxLidarImuDataCallback(LivoxLidarImuDataCallback cb, void* client_data) {
@@ -270,6 +276,14 @@ livox_status StopForcedHeating(uint32_t handle, LivoxLidarAsyncControlCallback c
   return CommandImpl::StopForcedHeating(handle, cb, client_data);
 }
 
+livox_status SetLivoxLidarPpsSyncMode(uint32_t handle, LivoxLidarPpsSyncMode pps_sync_mode, LivoxLidarAsyncControlCallback cb, void* client_data) {
+  return CommandImpl::SetLivoxLidarPpsSyncMode(handle, pps_sync_mode, cb, client_data);
+}
+
+livox_status SetLivoxLidarEscMode(uint32_t handle, LivoxLidarEscMode esc_mode, LivoxLidarAsyncControlCallback cb, void* client_data) {
+  return CommandImpl::SetLivoxLidarEscMode(handle, esc_mode, cb, client_data);
+}
+
 livox_status EnableLivoxLidarImuData(uint32_t handle, LivoxLidarAsyncControlCallback cb, void* client_data) {
   return CommandImpl::EnableLivoxLidarImuData(handle, cb, client_data);
 }
@@ -282,6 +296,18 @@ livox_status EnableLivoxLidarFusaFunciont(uint32_t handle, LivoxLidarAsyncContro
 }
 livox_status DisableLivoxLidarFusaFunciont(uint32_t handle, LivoxLidarAsyncControlCallback cb, void* client_data) {
   return CommandImpl::DisableLivoxLidarFusaFunciont(handle, cb, client_data);
+}
+
+livox_status SetLivoxLidarDebugPointCloud(uint32_t handle, bool enable, LivoxLidarLoggerCallback cb, void* client_data) {
+  return CommandImpl::SetLivoxLidarDebugPointCloud(handle, enable, cb, client_data);
+}
+
+livox_status SetLivoxLidarRmcSyncTime(uint32_t handle, const char* rmc, uint16_t rmc_length, LivoxLidarRmcSyncTimeCallBack cb, void* client_data) {
+  return CommandImpl::SetLivoxLidarRmcSyncTime(handle, rmc, rmc_length, cb, client_data);
+}
+
+livox_status SetLivoxLidarWorkModeAfterBoot(const uint32_t handle,const LivoxLidarWorkModeAfterBoot work_mode, LivoxLidarAsyncControlCallback cb, void* client_data){
+  return CommandImpl::SetLivoxLidarWorkModeAfterBoot(handle, work_mode, cb, client_data);
 }
 
 // reset lidar

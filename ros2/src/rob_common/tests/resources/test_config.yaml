@@ -1,0 +1,16 @@
+%YAML:1.0
+
+logger: 
+  log_path: "/opt/robot/log/robot_log/"
+  log_name: "robot_test_logger"
+  log_prefix: "robot_test_logger_"
+  single_log_max_size_MB: 10
+  log_max_cnt: 50
+  # trace:0, debug:1, info:2, warn:3, error:4, critical:5, off:6
+  log_level_num: 1
+  is_asyn_log: true
+  log_queue_size: 8192
+  log_thread_cnt: 4
+  is_console_log: true
+
+

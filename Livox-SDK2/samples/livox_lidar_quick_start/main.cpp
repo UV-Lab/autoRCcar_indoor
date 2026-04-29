@@ -26,7 +26,7 @@
 #include "livox_lidar_api.h"
 
 #ifdef _WIN32
-#include <winsock.h>
+#include <winsock2.h>
 #else
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -77,7 +77,16 @@ void ImuDataCallback(uint32_t handle, const uint8_t dev_type,  LivoxLidarEtherne
 //     printf("lidar set ip number timeout\n");
 //   }
 // }
-     
+
+void EscModeSetCallback(livox_status status, uint32_t handle, LivoxLidarAsyncControlResponse *response, void *client_data) {
+  printf("set lidar esc mode, please power off and on lidar!!!!\n");
+  if (response == nullptr) {
+    return;
+  }
+  printf("EscModeSetCallback, status:%u, handle:%u, ret_code:%u, error_key:%u",
+      status, handle, response->ret_code, response->error_key);
+}
+
 void WorkModeCallback(livox_status status, uint32_t handle,LivoxLidarAsyncControlResponse *response, void *client_data) {
   if (response == nullptr) {
     return;
@@ -157,6 +166,9 @@ void LidarInfoChangeCallback(const uint32_t handle, const LivoxLidarInfo* info, 
     return;
   } 
   printf("LidarInfoChangeCallback Lidar handle: %u SN: %s\n", handle, info->sn);
+
+  // set lidar esc mode
+  SetLivoxLidarEscMode(handle, kLivoxEscSpeedSlow, EscModeSetCallback, nullptr);
   
   // set the work mode to kLivoxLidarNormal, namely start the lidar
   SetLivoxLidarWorkMode(handle, kLivoxLidarNormal, WorkModeCallback, nullptr);
@@ -171,10 +183,10 @@ void LidarInfoChangeCallback(const uint32_t handle, const LivoxLidarInfo* info, 
 }
 
 void LivoxLidarPushMsgCallback(const uint32_t handle, const uint8_t dev_type, const char* info, void* client_data) {
-   struct in_addr tmp_addr;
-   tmp_addr.s_addr = handle;  
-   std::cout << "handle: " << handle << ", ip: " << inet_ntoa(tmp_addr) << ", push msg info: " << std::endl;
-   std::cout << info << std::endl;
+  struct in_addr tmp_addr;
+  tmp_addr.s_addr = handle;  
+  std::cout << "handle: " << handle << ", ip: " << inet_ntoa(tmp_addr) << ", push msg info: " << std::endl;
+  std::cout << info << std::endl;
   return;
 }
 

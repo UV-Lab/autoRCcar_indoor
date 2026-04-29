@@ -1,0 +1,21 @@
+syntax = "proto3";
+package example_msgs;
+
+option optimize_for = LITE_RUNTIME;
+
+import "robot_base/std_msgs.proto";
+
+message RobotStateRequest {
+    std_msgs.Header header = 1;
+    string robot_name = 2;
+}
+
+message RobotStateResponse {
+    std_msgs.Header header = 1;
+    enum RobotState {
+        SHUTDOWN = 0;
+        IDLE = 1;
+        RUNNING = 2;
+    }
+    RobotState robot_state = 2;
+}

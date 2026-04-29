@@ -1,0 +1,31 @@
+syntax = "proto3";
+package sensor_msgs;
+
+option optimize_for = LITE_RUNTIME;
+
+import "robot_base/std_msgs.proto";
+
+// The image message, it is suit for RGB, gray, depth and other image.
+message Image {
+    // Message header.
+    std_msgs.Header header = 1;
+    // Image height
+    uint32 height = 2;
+    // Image width 
+    uint32 width = 3;
+    // Image pixel format
+    enum EncodingType {
+        // RGB image
+        RGB8=0;
+        // 8-bit gray image.
+        MONO8=1;
+        // 16-bit gray/depth image.
+        MONO16=2;
+    }
+    EncodingType encoding = 4;
+    bool is_bigendian = 5;
+    // Image step of a row.
+    uint32 step = 6;
+    // The data buffer of image.
+    bytes data = 7;
+}

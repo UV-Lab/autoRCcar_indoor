@@ -1,0 +1,69 @@
+%YAML:1.0
+---
+cloud_process:
+  cloud_range:
+    min_x: -50.0
+    max_x: 50.0
+    min_y: -50.0
+    max_y: 50.0
+    min_z: -1.6
+    max_z: 0.0
+  voxel_size: 0.2
+
+tf_base_lidar: !!opencv-matrix
+   rows: 4
+   cols: 4
+   dt: f
+   data: [1.0, 0.0, 0.0, 0.0,
+          0.0, 1.0, 0.0, 0.0,
+          0.0, 0.0, 1.0, 0.0,
+          0.0, 0.0, 0.0, 1.0]
+
+tf_map_new_old_mat_file: "tf_map_new_old_mat.txt"
+tf_map_new_old: !!opencv-matrix
+   rows: 4
+   cols: 4
+   dt: f
+   data: [0.446391522884 , -0.894819498062 ,0.005716515239, 56.769088745117,
+          0.838430941105 , 0.420476585627  ,0.346746295691, 34.460819244385,
+          -0.312679022551, -0.149991706014 ,0.937941551208, 9.939241409302,
+          0.000000000000 , 0.000000000000  ,0.000000000000, 1.000000000000  ]
+  #  data: [1.0, 0.0, 0.0, 0.0,
+  #         0.0, 1.0, 0.0, 0.0,
+  #         0.0, 0.0, 1.0, 0.0,
+  #         0.0, 0.0, 0.0, 1.0]
+
+
+ground_segment:
+  # The minimum height of point clouds near the ground
+  min_height: -1.8
+  # The maximum height of point clouds near the ground
+  max_height: -1.0
+  num_iter: 10
+  num_lpr: 200
+  seed_th: 0.100
+  dist_th: 0.150
+  # the angle threshold of slope, unit: rad.
+  slop_deg_th: 20.0
+  segment_height_th: -0.6
+
+cloud_to_scan:
+  # The min scan angle, unit: deg
+  angle_min: -180.0
+  # The max scan angle, unit: deg
+  angle_max: 180.0
+  # The angle incremant, unit: deg
+  angle_increment: 0.05
+  time_increment: 0.01
+  scan_time: 0.1
+  range_min: 0.3
+  range_max: 40.0
+  z_min: -1.2
+  z_max: 0.5
+
+occupancy_map:
+  # The resolution of the map, unit: meter/grid
+  resolution: 0.100
+  free_pix_th: 137
+  obstacle_pix_th: 117
+  

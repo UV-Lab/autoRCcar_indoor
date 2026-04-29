@@ -1,6 +1,9 @@
 #include "utility.hpp"
 #include "lio_sam/msg/cloud_info.hpp"
 
+#include <pcl/io/ply_io.h>
+#include <filesystem>
+
 struct VelodynePointXYZIRT
 {
     PCL_ADD_POINT4D
@@ -103,6 +106,9 @@ private:
 
     vector<int> columnIdnCountVec;
 
+    size_t show_cloud_count = 0;
+    size_t src_cloud_save_count = 0;
+
 
 public:
     ImageProjection(const rclcpp::NodeOptions & options) :
@@ -192,6 +198,21 @@ public:
     {
         sensor_msgs::msg::Imu thisImu = imuConverter(*imuMsg);
 
+        Eigen::Vector3f lidar_acc(thisImu.linear_acceleration.x,
+                                  thisImu.linear_acceleration.y,
+                                  thisImu.linear_acceleration.z);
+        Eigen::Vector3f base_acc = rotBaseLidar * lidar_acc;
+        thisImu.linear_acceleration.x = base_acc.x();
+        thisImu.linear_acceleration.y = base_acc.y();
+        thisImu.linear_acceleration.z = base_acc.z();
+        Eigen::Vector3f lidar_gyro(thisImu.angular_velocity.x,
+                                   thisImu.angular_velocity.y,
+                                   thisImu.angular_velocity.z);
+        Eigen::Vector3f base_gyro = rotBaseLidar * lidar_gyro;
+        thisImu.angular_velocity.x = base_gyro.x();
+        thisImu.angular_velocity.y = base_gyro.y();
+        thisImu.angular_velocity.z = base_gyro.z();
+
         std::lock_guard<std::mutex> lock1(imuLock);
         imuQueue.push_back(thisImu);
 
@@ -222,7 +243,10 @@ public:
     void cloudHandler(const livox_ros_driver2::msg::CustomMsg::SharedPtr laserCloudMsg)
     {
         if (!cachePointCloud(laserCloudMsg))
+        {
+            std::cout << "cachePointCloud failed" << std::endl;
             return;
+        }
 
         if (!deskewInfo())
             return;
@@ -236,7 +260,7 @@ public:
         resetParameters();
     }
 
-    void moveFromCustomMsg(livox_ros_driver2::msg::CustomMsg &Msg, pcl::PointCloud<PointXYZIRT> & cloud)
+    void moveFromCustomMsg(const livox_ros_driver2::msg::CustomMsg &Msg, pcl::PointCloud<PointXYZIRT> & cloud)
     {
         cloud.clear();
         cloud.reserve(Msg.point_num);
@@ -259,10 +283,76 @@ public:
         }
     }
 
+
+    void moveFromCustomMsgToPointType(const livox_ros_driver2::msg::CustomMsg &Msg, pcl::PointCloud<PointType> & cloud)
+    {
+        cloud.clear();
+        cloud.reserve(Msg.point_num);
+        PointType point;
+
+
+        for(uint i=0;i<Msg.point_num-1;i++)
+        {
+            point.x=Msg.points[i].x; 
+            point.y=Msg.points[i].y; 
+            point.z=Msg.points[i].z; 
+            point.intensity=Msg.points[i].reflectivity; 
+            cloud.push_back(point);
+        }
+    }
+
     bool cachePointCloud(const livox_ros_driver2::msg::CustomMsg::SharedPtr& laserCloudMsg)
     {
         // cache point cloud
         cloudQueue.push_back(*laserCloudMsg);
+        Eigen::Vector3d first_point = Eigen::Vector3d(laserCloudMsg->points[0].x,
+                                                            laserCloudMsg->points[0].y,
+                                                            laserCloudMsg->points[0].z);
+
+        // ========================
+        // const std::string src_cloud_save_dir = "/sandbox/pointcloud_debug/src";
+        // std::error_code ec;
+        // std::filesystem::create_directories(src_cloud_save_dir, ec);
+        // if (ec)
+        // {
+        //     RCLCPP_WARN(get_logger(), "Failed to create source cloud directory %s: %s",
+        //                 src_cloud_save_dir.c_str(), ec.message().c_str());
+        // }
+        // else
+        // {
+        //     pcl::PointCloud<PointType>::Ptr srcCloudForViz(new pcl::PointCloud<PointType>());
+        //     moveFromCustomMsgToPointType(*laserCloudMsg, *srcCloudForViz);
+
+        //     const auto stamp = laserCloudMsg->header.stamp;
+        //     std::string ply_file = src_cloud_save_dir + "/src_cloud_" +
+        //                            std::to_string(stamp.sec) + "_" +
+        //                            std::to_string(stamp.nanosec) + "_" +
+        //                            std::to_string(src_cloud_save_count++) + ".ply";
+
+        //     if (pcl::io::savePLYFileBinary(ply_file, *srcCloudForViz) != 0)
+        //     {
+        //         RCLCPP_WARN(get_logger(), "Failed to save source cloud: %s", ply_file.c_str());
+        //     }
+        // }
+        // ========================
+
+        auto &curCloudMsg = cloudQueue.back();
+        for (auto &pnt : curCloudMsg.points) {
+            Eigen::Vector4f lidar_pnt(pnt.x, pnt.y, pnt.z, 1.0);
+            Eigen::Vector4f base_pnt = tfBaseLidar * lidar_pnt;
+            pnt.x = base_pnt.x();
+            pnt.y = base_pnt.y();
+            pnt.z = base_pnt.z();
+        }
+
+        show_cloud_count++;
+        // std::cout << "show_cloud_count: " << show_cloud_count 
+        // << ", stamp: " << laserCloudMsg->header.stamp.nanosec << ", timebase: " << laserCloudMsg->timebase  
+        // << ", size: " << cloudQueue.size()
+        // << "first point x,y,z: " << cloudQueue.back().points[0].x << ", " << cloudQueue.back().points[0].y << ", " << cloudQueue.back().points[0].z 
+        // << ", src first point x,y,z: " << first_point.x() << ", " << first_point.y() << ", " << first_point.z()
+        // <<std::endl;
+
         if (cloudQueue.size() <= 2)
             return false;
 

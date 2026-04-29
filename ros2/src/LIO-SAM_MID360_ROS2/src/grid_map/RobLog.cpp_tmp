@@ -1,0 +1,34 @@
+#include "RobLog.h"
+#include <cstdarg>
+#include <cstdio>
+
+namespace grid_map {
+
+void RobLog::log(LogLevel level, const char *format, ...) {
+  const char *prefix = "";
+  switch (level) {
+  case LogLevel::TRACE:
+    prefix = "[TRACE] ";
+    break;
+  case LogLevel::DEBUG:
+    prefix = "[DEBUG] ";
+    break;
+  case LogLevel::INFO:
+    prefix = "[INFO]  ";
+    break;
+  case LogLevel::WARN:
+    prefix = "[WARN]  ";
+    break;
+  }
+
+  printf("%s", prefix);
+
+  va_list args;
+  va_start(args, format);
+  vprintf(format, args);
+  va_end(args);
+
+  printf("\n");
+}
+
+} // namespace grid_map

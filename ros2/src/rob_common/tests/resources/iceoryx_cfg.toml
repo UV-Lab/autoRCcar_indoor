@@ -1,0 +1,19 @@
+[general]
+version = 1
+
+[[segment]]
+max_runtime_name_length = 40
+max_shared_memory_size = "4GB"
+
+# 必须按照size从小到大顺序排列
+[[segment.mempool]]
+size = 1024128   # 102400数据 + 128头信息
+count = 20
+
+[[segment.mempool]]
+size = 1600128   # 中间块
+count = 20
+
+[[segment.mempool]]
+size = 2400128   # 最大块
+count = 20

@@ -13,8 +13,10 @@
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam_unstable/nonlinear/IncrementalFixedLagSmoother.h>
 
-#include "autorccar_interfaces/msg/nav_state.hpp"
+// #include "autorccar_interfaces/msg/nav_state.hpp"
 #include "utility.hpp"
+
+#include <rosLog/rosLog.h>
 
 using gtsam::symbol_shorthand::B;  // Bias  (ax,ay,az,gx,gy,gz)
 using gtsam::symbol_shorthand::V;  // Vel   (xdot,ydot,zdot)
@@ -158,7 +160,7 @@ class IMUPreintegration : public ParamServer {
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr subImu;
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr subOdometry;
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pubImuOdometry;
-    rclcpp::Publisher<autorccar_interfaces::msg::NavState>::SharedPtr pubNavState;
+    // rclcpp::Publisher<autorccar_interfaces::msg::NavState>::SharedPtr pubNavState;
 
     rclcpp::CallbackGroup::SharedPtr callbackGroupImu;
     rclcpp::CallbackGroup::SharedPtr callbackGroupOdom;
@@ -203,7 +205,13 @@ class IMUPreintegration : public ParamServer {
     gtsam::Pose3 lidar2Imu =
         gtsam::Pose3(gtsam::Rot3(1, 0, 0, 0), gtsam::Point3(extTrans.x(), extTrans.y(), extTrans.z()));
 
+    std::unique_ptr<gac::lio_sam::RosLog> rosLog_ = nullptr;
+
     IMUPreintegration(const rclcpp::NodeOptions& options) : ParamServer("lio_sam_imu_preintegration", options) {
+
+        rosLog_ = std::make_unique<gac::lio_sam::RosLog>(rosLogFile);
+        rosLog_->Write("0");
+
         callbackGroupImu = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
         callbackGroupOdom = create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
@@ -219,7 +227,7 @@ class IMUPreintegration : public ParamServer {
             std::bind(&IMUPreintegration::odometryHandler, this, std::placeholders::_1), odomOpt);
 
         pubImuOdometry = create_publisher<nav_msgs::msg::Odometry>(odomTopic + "_incremental", qos_imu);
-        pubNavState = create_publisher<autorccar_interfaces::msg::NavState>("/nav_topic", 10);
+        //pubNavState = create_publisher<autorccar_interfaces::msg::NavState>("/nav_topic", 10);
 
         boost::shared_ptr<gtsam::PreintegrationParams> p = gtsam::PreintegrationParams::MakeSharedU(imuGravity);
         p->accelerometerCovariance =
@@ -456,6 +464,7 @@ class IMUPreintegration : public ParamServer {
         Eigen::Vector3f vel(velCur.x(), velCur.y(), velCur.z());
         if (vel.norm() > 30) {
             RCLCPP_WARN(get_logger(), "Large velocity, reset IMU-preintegration!");
+            rosLog_->Write("1001");
             return true;
         }
 
@@ -463,6 +472,7 @@ class IMUPreintegration : public ParamServer {
         Eigen::Vector3f bg(biasCur.gyroscope().x(), biasCur.gyroscope().y(), biasCur.gyroscope().z());
         if (ba.norm() > 1.0 || bg.norm() > 1.0) {
             RCLCPP_WARN(get_logger(), "Large bias, reset IMU-preintegration!");
+            rosLog_->Write("1002");
             return true;
         }
 
@@ -474,6 +484,21 @@ class IMUPreintegration : public ParamServer {
 
         sensor_msgs::msg::Imu thisImu = imuConverter(*imu_raw);
 
+        Eigen::Vector3f lidar_acc(thisImu.linear_acceleration.x,
+                                  thisImu.linear_acceleration.y,
+                                  thisImu.linear_acceleration.z);
+        Eigen::Vector3f base_acc = rotBaseLidar * lidar_acc;
+        thisImu.linear_acceleration.x = base_acc.x();
+        thisImu.linear_acceleration.y = base_acc.y();
+        thisImu.linear_acceleration.z = base_acc.z();
+        Eigen::Vector3f lidar_gyro(thisImu.angular_velocity.x,
+                                   thisImu.angular_velocity.y,
+                                   thisImu.angular_velocity.z);
+        Eigen::Vector3f base_gyro = rotBaseLidar * lidar_gyro;
+        thisImu.angular_velocity.x = base_gyro.x();
+        thisImu.angular_velocity.y = base_gyro.y();
+        thisImu.angular_velocity.z = base_gyro.z();
+        
         imuQueOpt.push_back(thisImu);
         imuQueImu.push_back(thisImu);
 
@@ -517,25 +542,25 @@ class IMUPreintegration : public ParamServer {
         odometry.twist.twist.angular.z = thisImu.angular_velocity.z + prevBiasOdom.gyroscope().z();
         pubImuOdometry->publish(odometry);
 
-        autorccar_interfaces::msg::NavState navState;
-        navState.timestamp = odometry.header.stamp;
-        navState.position.x = odometry.pose.pose.position.x;
-        navState.position.y = odometry.pose.pose.position.y;
-        navState.position.z = odometry.pose.pose.position.z;
-        navState.velocity.x = odometry.twist.twist.linear.x;
-        navState.velocity.y = odometry.twist.twist.linear.y;
-        navState.velocity.z = odometry.twist.twist.linear.z;
-        navState.quaternion.w = odometry.pose.pose.orientation.w;
-        navState.quaternion.x = odometry.pose.pose.orientation.x;
-        navState.quaternion.y = odometry.pose.pose.orientation.y;
-        navState.quaternion.z = odometry.pose.pose.orientation.z;
-        navState.acceleration.x = thisImu.linear_acceleration.x;
-        navState.acceleration.y = thisImu.linear_acceleration.y;
-        navState.acceleration.z = thisImu.linear_acceleration.z;
-        navState.angular_velocity.x = thisImu.angular_velocity.x;
-        navState.angular_velocity.y = thisImu.angular_velocity.y;
-        navState.angular_velocity.z = thisImu.angular_velocity.z;
-        pubNavState->publish(navState);
+        //autorccar_interfaces::msg::NavState navState;
+        // navState.timestamp = odometry.header.stamp;
+        // navState.position.x = odometry.pose.pose.position.x;
+        // navState.position.y = odometry.pose.pose.position.y;
+        // navState.position.z = odometry.pose.pose.position.z;
+        // navState.velocity.x = odometry.twist.twist.linear.x;
+        // navState.velocity.y = odometry.twist.twist.linear.y;
+        // navState.velocity.z = odometry.twist.twist.linear.z;
+        // navState.quaternion.w = odometry.pose.pose.orientation.w;
+        // navState.quaternion.x = odometry.pose.pose.orientation.x;
+        // navState.quaternion.y = odometry.pose.pose.orientation.y;
+        // navState.quaternion.z = odometry.pose.pose.orientation.z;
+        // navState.acceleration.x = thisImu.linear_acceleration.x;
+        // navState.acceleration.y = thisImu.linear_acceleration.y;
+        // navState.acceleration.z = thisImu.linear_acceleration.z;
+        // navState.angular_velocity.x = thisImu.angular_velocity.x;
+        // navState.angular_velocity.y = thisImu.angular_velocity.y;
+        // navState.angular_velocity.z = thisImu.angular_velocity.z;
+        //pubNavState->publish(navState);
     }
 };
 
