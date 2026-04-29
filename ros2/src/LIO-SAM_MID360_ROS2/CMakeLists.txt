@@ -32,7 +32,7 @@ find_package(GTSAM REQUIRED)
 find_package(Eigen REQUIRED)
 find_package(OpenMP REQUIRED)
 find_package(livox_ros_driver2 REQUIRED)
-find_package(autorccar_interfaces REQUIRED)
+# find_package(autorccar_interfaces REQUIRED)
 
 include_directories(
   include/lio_sam
@@ -59,7 +59,7 @@ target_include_directories(${PROJECT_NAME}_imuPreintegration PRIVATE
   ${PROJECT_SOURCE_DIR}/src
 )
 
-ament_target_dependencies(${PROJECT_NAME}_imuPreintegration rclcpp rclpy std_msgs sensor_msgs geometry_msgs nav_msgs pcl_conversions pcl_msgs visualization_msgs tf2 tf2_ros tf2_eigen tf2_sensor_msgs tf2_geometry_msgs OpenCV PCL GTSAM Eigen autorccar_interfaces livox_ros_driver2)
+ament_target_dependencies(${PROJECT_NAME}_imuPreintegration rclcpp rclpy std_msgs sensor_msgs geometry_msgs nav_msgs pcl_conversions pcl_msgs visualization_msgs tf2 tf2_ros tf2_eigen tf2_sensor_msgs tf2_geometry_msgs OpenCV PCL GTSAM Eigen livox_ros_driver2)
 target_link_libraries(${PROJECT_NAME}_imuPreintegration gtsam "${cpp_typesupport_target}")
 
 add_executable(${PROJECT_NAME}_mapOptimization 

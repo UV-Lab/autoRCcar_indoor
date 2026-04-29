@@ -13,7 +13,7 @@
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam_unstable/nonlinear/IncrementalFixedLagSmoother.h>
 
-#include "autorccar_interfaces/msg/nav_state.hpp"
+// #include "autorccar_interfaces/msg/nav_state.hpp"
 #include "utility.hpp"
 
 #include <rosLog/rosLog.h>
@@ -160,7 +160,7 @@ class IMUPreintegration : public ParamServer {
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr subImu;
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr subOdometry;
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pubImuOdometry;
-    rclcpp::Publisher<autorccar_interfaces::msg::NavState>::SharedPtr pubNavState;
+    // rclcpp::Publisher<autorccar_interfaces::msg::NavState>::SharedPtr pubNavState;
 
     rclcpp::CallbackGroup::SharedPtr callbackGroupImu;
     rclcpp::CallbackGroup::SharedPtr callbackGroupOdom;
@@ -227,7 +227,7 @@ class IMUPreintegration : public ParamServer {
             std::bind(&IMUPreintegration::odometryHandler, this, std::placeholders::_1), odomOpt);
 
         pubImuOdometry = create_publisher<nav_msgs::msg::Odometry>(odomTopic + "_incremental", qos_imu);
-        pubNavState = create_publisher<autorccar_interfaces::msg::NavState>("/nav_topic", 10);
+        //pubNavState = create_publisher<autorccar_interfaces::msg::NavState>("/nav_topic", 10);
 
         boost::shared_ptr<gtsam::PreintegrationParams> p = gtsam::PreintegrationParams::MakeSharedU(imuGravity);
         p->accelerometerCovariance =
@@ -542,25 +542,25 @@ class IMUPreintegration : public ParamServer {
         odometry.twist.twist.angular.z = thisImu.angular_velocity.z + prevBiasOdom.gyroscope().z();
         pubImuOdometry->publish(odometry);
 
-        autorccar_interfaces::msg::NavState navState;
-        navState.timestamp = odometry.header.stamp;
-        navState.position.x = odometry.pose.pose.position.x;
-        navState.position.y = odometry.pose.pose.position.y;
-        navState.position.z = odometry.pose.pose.position.z;
-        navState.velocity.x = odometry.twist.twist.linear.x;
-        navState.velocity.y = odometry.twist.twist.linear.y;
-        navState.velocity.z = odometry.twist.twist.linear.z;
-        navState.quaternion.w = odometry.pose.pose.orientation.w;
-        navState.quaternion.x = odometry.pose.pose.orientation.x;
-        navState.quaternion.y = odometry.pose.pose.orientation.y;
-        navState.quaternion.z = odometry.pose.pose.orientation.z;
-        navState.acceleration.x = thisImu.linear_acceleration.x;
-        navState.acceleration.y = thisImu.linear_acceleration.y;
-        navState.acceleration.z = thisImu.linear_acceleration.z;
-        navState.angular_velocity.x = thisImu.angular_velocity.x;
-        navState.angular_velocity.y = thisImu.angular_velocity.y;
-        navState.angular_velocity.z = thisImu.angular_velocity.z;
-        pubNavState->publish(navState);
+        //autorccar_interfaces::msg::NavState navState;
+        // navState.timestamp = odometry.header.stamp;
+        // navState.position.x = odometry.pose.pose.position.x;
+        // navState.position.y = odometry.pose.pose.position.y;
+        // navState.position.z = odometry.pose.pose.position.z;
+        // navState.velocity.x = odometry.twist.twist.linear.x;
+        // navState.velocity.y = odometry.twist.twist.linear.y;
+        // navState.velocity.z = odometry.twist.twist.linear.z;
+        // navState.quaternion.w = odometry.pose.pose.orientation.w;
+        // navState.quaternion.x = odometry.pose.pose.orientation.x;
+        // navState.quaternion.y = odometry.pose.pose.orientation.y;
+        // navState.quaternion.z = odometry.pose.pose.orientation.z;
+        // navState.acceleration.x = thisImu.linear_acceleration.x;
+        // navState.acceleration.y = thisImu.linear_acceleration.y;
+        // navState.acceleration.z = thisImu.linear_acceleration.z;
+        // navState.angular_velocity.x = thisImu.angular_velocity.x;
+        // navState.angular_velocity.y = thisImu.angular_velocity.y;
+        // navState.angular_velocity.z = thisImu.angular_velocity.z;
+        //pubNavState->publish(navState);
     }
 };
 

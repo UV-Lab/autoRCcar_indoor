@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import shlex
 import signal
 import subprocess
 import sys
@@ -10,7 +11,7 @@ from pathlib import Path
 SCRIPT_PATH = Path(__file__).resolve().parent
 print(SCRIPT_PATH)
 
-INSTALL_PATH = f"{SCRIPT_PATH}/ros2/install/setup.bash"
+# INSTALL_PATH = f"{SCRIPT_PATH}/ros2/install/setup.bash"
 SCAN_PID_FILE = Path("/tmp/.run_nav_scan.pid")
 SAVE_MAP_PATH = ""
 
@@ -25,6 +26,8 @@ def validate_input_path(argv: list[str]) -> str:
         raise ValueError("缺少用户数据文件夹路径参数")
 
     user_data_dir = argv[1]
+    if user_data_dir[-1] == "/":
+        user_data_dir = user_data_dir[:-1]
     if not Path(user_data_dir).is_dir():
         raise FileNotFoundError(f"错误: 命令行路径不准确，目录不存在: {user_data_dir}")
 
@@ -42,9 +45,9 @@ def _is_process_alive(pid: int) -> bool:
     return True
 
 
-def run_shell_command(command: list[str]) -> None:
+def run_shell_command(command: str) -> None:
     try:
-        subprocess.run(command, check=True)
+        subprocess.run(command, check=True, shell=True, executable="/bin/bash")
     except (subprocess.SubprocessError, OSError):
         stop_scan_process()
         raise
@@ -75,7 +78,7 @@ def scan_command() -> None:
 
 def ros_bag_play(user_data_dir: str) -> None:
     print("开始执行函数2...")
-    run_shell_command(["ros2", "bag", "play", user_data_dir, "-r", "1"])
+    run_shell_command(f"ros2 bag play {shlex.quote(user_data_dir)} -r 1")
     print(f"函数2执行完成，目标目录: {user_data_dir}")
 
 
@@ -131,14 +134,8 @@ def savemap_command(user_data_dir: str) -> None:
         "{resolution: 0.2, destination: '" + SAVE_MAP_PATH + "'}"
     )
     run_shell_command(
-        [
-            "ros2",
-            "service",
-            "call",
-            "/lio_sam/save_map",
-            "lio_sam/srv/SaveMap",
-            service_payload,
-        ]
+        "ros2 service call /lio_sam/save_map lio_sam/srv/SaveMap "
+        f"{shlex.quote(service_payload)}"
     )
 
     stop_scan_process()
@@ -159,41 +156,36 @@ def post_process_command() -> None:
 
     print("Running transform_global_map...")
     run_shell_command(
-        [
-            transform_cmd,
-            f"{SAVE_MAP_PATH}/pointCloud",
-            cfg_file,
-            f"{SAVE_MAP_PATH}/tf_new_old_mat.txt",
-            f"{SAVE_MAP_PATH}/global_map_tf",
-        ]
+        f"{shlex.quote(transform_cmd)} "
+        f"{shlex.quote(f'{SAVE_MAP_PATH}/pointCloud')} "
+        f"{shlex.quote(cfg_file)} "
+        f"{shlex.quote(f'{SAVE_MAP_PATH}/tf_new_old_mat.txt')} "
+        f"{shlex.quote(f'{SAVE_MAP_PATH}/global_map_tf')}"
     )
 
     print("Running grid_map_builder...")
     run_shell_command(
-        [
-            grid_builder_cmd,
-            f"{SAVE_MAP_PATH}/global_map_tf/pointCloud",
-            cfg_file,
-            f"{SAVE_MAP_PATH}/loc_map/grid_map",
-            "default",
-        ]
+        f"{shlex.quote(grid_builder_cmd)} "
+        f"{shlex.quote(f'{SAVE_MAP_PATH}/global_map_tf/pointCloud')} "
+        f"{shlex.quote(cfg_file)} "
+        f"{shlex.quote(f'{SAVE_MAP_PATH}/loc_map/grid_map')} default"
     )
 
     print("Running slam_map_post_processing...")
     run_shell_command(
-        [
-            slam_map_post_processing_cmd,
-            loc_config_mid360_slope_file,
-            f"{SAVE_MAP_PATH}/global_map_tf",
-            "50",
-            f"{SAVE_MAP_PATH}/loc_map/split_map",
-        ]
+        f"{shlex.quote(slam_map_post_processing_cmd)} "
+        f"{shlex.quote(loc_config_mid360_slope_file)} "
+        f"{shlex.quote(f'{SAVE_MAP_PATH}/global_map_tf')} "
+        f"50 {shlex.quote(f'{SAVE_MAP_PATH}/loc_map/split_map')}"
     )
 
 
 def main() -> int:
     try:
         user_data_dir = validate_input_path(sys.argv)
+        # 
+        # 在这里执行 'bash ${SCRIPT_PATH}/build_ros2.sh' 这个脚本
+        # 且这个脚本中会执行source这种语句，使得在后续脚步中也生效
         scan_command()
         ros_bag_play(user_data_dir)
         savemap_command(user_data_dir)
